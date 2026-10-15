@@ -1,0 +1,49 @@
+<section class="money-tools" id="money-tools" aria-labelledby="tools-title">
+  <div class="tools-heading"><div><span class="eyebrow">RUANG KAWALAN</span><h2 id="tools-title">Buat duit cukup sampai gaji.</h2></div><span class="muted">Rekod, semak, rancang.</span></div>
+  <div class="tool-tabs" role="tablist" aria-label="Alat kewangan">
+    <button role="tab" id="tab-spending" aria-controls="panel-spending" aria-selected="true" tabindex="0">Belanja harian</button>
+    <button role="tab" id="tab-planning" aria-controls="panel-planning" aria-selected="false" tabindex="-1">Rancang bulan</button>
+    <button role="tab" id="tab-recap" aria-controls="panel-recap" aria-selected="false" tabindex="-1">Recap & data</button>
+  </div>
+  <div id="panel-spending" role="tabpanel" aria-labelledby="tab-spending" class="tools-grid">
+    <section class="tool-pane"><div class="panel-top"><h3>Rekod belanja</h3><span class="section-kicker" id="expense-count"></span></div>
+      <p class="tool-help">Rekod semua belanja harian pada tarikh dipilih. Jumlah ini menggantikan anggaran hari itu; bil tetap sudah diasingkan dalam bajet.</p>
+      <form id="expense-form" class="tool-form"><div class="field-grid">
+        <label class="field">Jumlah (RM)<input id="expense-amount" type="number" min="0.01" max="10000000" step="0.01" inputmode="decimal" required placeholder="0.00"></label>
+        <label class="field">Kategori<select id="expense-category"></select></label>
+        <label class="field">Tarikh<input id="expense-date" type="date" min="2000-01-01" required></label>
+        <label class="field">Nota (pilihan)<input id="expense-note" maxlength="120" placeholder="Contoh: lunch"></label>
+      </div><p class="form-error" id="expense-error" role="alert"></p><div class="tool-actions"><button class="button primary" type="submit" id="expense-save">Simpan belanja</button><button class="text-button" type="button" id="expense-cancel" hidden>Batal edit</button><button class="text-button" type="button" id="zero-day">Hari ini RM0</button></div></form>
+      <div class="day-summary"><strong id="day-total"></strong><span id="day-status"></span></div>
+      <div id="expense-list" class="expense-list" aria-label="Rekod pada tarikh dipilih"></div>
+      <button class="text-button" id="day-estimate" hidden>Guna anggaran semula untuk tarikh ini</button>
+    </section>
+    <section class="tool-pane purchase-pane"><span class="eyebrow">SEBELUM CHECKOUT</span><h3>Boleh beli ke?</h3><p class="tool-help">Masukkan harga barang. Tengok kesannya pada baki dan tempoh survival kau.</p>
+      <label class="field">Harga barang (RM)<input id="purchase-amount" type="number" min="0" max="10000000" step="0.01" inputmode="decimal" placeholder="0.00"></label>
+      <div class="amount-presets" aria-label="Harga contoh"><button type="button" data-price="50">RM50</button><button type="button" data-price="150">RM150</button><button type="button" data-price="500">RM500</button></div>
+      <div id="purchase-result" class="scenario-result" aria-live="polite"><p>Isi harga untuk semak ruang bajet kau.</p></div>
+      <p class="tool-help">Simulasi sahaja. Menggunakan pilihan penjimatan yang aktif. Pembelian belum masuk dalam rekod belanja.</p>
+    </section>
+  </div>
+  <div id="panel-planning" role="tabpanel" aria-labelledby="tab-planning" class="tools-grid" hidden>
+    <section class="tool-pane"><div class="panel-top"><h3>Calendar bil & payday</h3><button class="text-button" id="bills-open">Atur tarikh bil</button></div>
+      <div class="month-nav"><button class="button" id="calendar-prev" aria-label="Bulan sebelumnya">‹</button><strong id="calendar-month"></strong><button class="button" id="calendar-next" aria-label="Bulan seterusnya">›</button></div>
+      <div id="bill-calendar" class="bill-calendar" aria-label="Kalendar tarikh bil dan gaji"></div><div id="bill-list" class="bill-list"></div>
+      <p class="tool-help">Tarikh ialah jadual, bukan pengesahan bayaran. Duit bil tetap diasingkan sejak awal kitaran supaya tak terbelanja.</p>
+    </section>
+    <section class="tool-pane"><span class="eyebrow">SEDIA UNTUK TAK DIJANGKA</span><h3>Kalau kecemasan berlaku?</h3><p class="tool-help">Cuba kos tambahan sebelum payday, kemudian ubah penjimatan untuk tengok ruang yang tinggal.</p>
+      <div class="field-grid"><label class="field">Kos kecemasan (RM)<input id="emergency-amount" type="number" min="0" max="10000000" step="0.01" inputmode="decimal" placeholder="500.00"></label><label class="field">Tarikh kejadian<input id="emergency-date" type="date" required></label></div>
+      <div id="emergency-result" class="scenario-result" aria-live="polite"><p>Isi kos untuk cuba senario.</p></div><a href="#simulation" class="text-button">Ubah pilihan penjimatan ↗</a>
+      <p class="tool-help">Senario ini dikira berasingan daripada “Boleh beli ke?” dan tidak menyimpan transaksi.</p>
+    </section>
+  </div>
+  <div id="panel-recap" role="tabpanel" aria-labelledby="tab-recap" class="tools-grid" hidden>
+    <section class="tool-pane"><div class="panel-top"><h3>Monthly recap</h3><label class="field">Bulan<input id="recap-month" type="month" min="2000-01" max="2099-12"></label></div><div id="recap-content"></div><p class="tool-help">Perbandingan hanya untuk hari yang direkod. Bajet hari itu disimpan ketika rekod pertama dibuat. Hari tanpa rekod tidak dianggap RM0.</p></section>
+    <section class="tool-pane"><span class="eyebrow">SIMPAN & SAMBUNG</span><h3>Data ikut kau.</h3><p class="tool-help">Download backup sebelum tukar browser atau peranti. Fail JSON mengandungi bajet dan rekod kewangan kau.</p><div class="tool-actions"><button class="button" id="backup-export">Download backup</button><label class="button file-label">Import backup<input id="backup-import" type="file" accept=".json,application/json"></label></div><p class="form-error" id="backup-error" role="alert"></p>
+      <div class="install-box"><h3>Buka macam app.</h3><p class="tool-help" id="install-status">Pasang pada home screen untuk akses cepat.</p><button class="button primary" id="install-app">Cara pasang app</button></div>
+    </section>
+  </div>
+</section>
+<dialog id="bills-dialog" class="guide-dialog"><form id="bills-form"><div class="dialog-header"><h2>Tarikh bil bulanan</h2><button type="button" class="close-button" data-close aria-label="Tutup tarikh bil">×</button></div><p class="tool-help">Jumlah ikut Edit bajet. Tarikh 29–31 diselaraskan ke hujung bulan pendek.</p><div id="bill-fields" class="field-grid"></div><p class="form-error" id="bills-error" role="alert"></p><button class="button primary" type="submit">Simpan tarikh</button></form></dialog>
+<dialog id="restore-dialog" class="guide-dialog"><div class="dialog-header"><h2>Semak backup</h2><button class="close-button" data-close aria-label="Batal import">×</button></div><p id="restore-summary"></p><p class="tool-help">Import menggantikan bajet dan rekod dalam browser ini. Download backup semasa dahulu jika nak simpan kedua-duanya.</p><div class="tool-actions"><button class="button" id="restore-backup">Backup data semasa</button><button class="button primary" id="restore-confirm">Gantikan dengan backup ini</button></div></dialog>
+<dialog id="install-dialog" class="guide-dialog"><div class="dialog-header"><h2>Pasang Gaji Survival</h2><button class="close-button" data-close aria-label="Tutup panduan pemasangan">×</button></div><div class="guide-body"><p>Di Chrome / Edge, buka menu browser dan pilih <strong>Install app</strong> jika tersedia. Di iPhone / iPad, buka dalam Safari → Share → <strong>Add to Home Screen</strong>.</p><p>Pemasangan memerlukan laman HTTPS atau localhost. Buka app sekali ketika online untuk menyediakan salinan offline. Data kekal dalam browser dan peranti yang sama; guna backup untuk pindah.</p><p id="offline-status" role="status"></p></div></dialog>

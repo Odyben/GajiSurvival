@@ -35,19 +35,21 @@ try {
   if (saved && validateProfile(saved.profile)) {
     profile = saved.profile; custom = saved.custom === true;
     for (const key of Object.keys(noCuts)) cuts[key] = saved.cuts?.[key] === true;
+    if (validateLedger(saved.ledger)) ledger = saved.ledger;
+    if (validateDue(saved.billDue)) billDue = saved.billDue;
   }
 } catch { storageAvailable = false; }
-let now = new Date(), result = calculate(profile, cuts, now), lastTick = Date.now(), sessionBurn = 0, toastTimer;
+let now = new Date(), result = calculate(profile, cuts, now, ledger), lastTick = Date.now(), sessionBurn = 0, toastTimer;
 function toast(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 4000); }
 function persist() {
-  try { localStorage.setItem(STORE, JSON.stringify({ profile, cuts, custom })); storageAvailable = true; }
+  try { localStorage.setItem(STORE, JSON.stringify({ profile, cuts, custom, ledger, billDue })); storageAvailable = true; }
   catch { storageAvailable = false; toast('Browser tidak benarkan simpanan. Bajet kekal untuk sesi ini sahaja.'); }
   updateStorageLabel();
 }
 function updateStorageLabel() { document.querySelector('.local-label').innerHTML = `<span class="status-dot"></span>${storageAvailable ? 'Disimpan di peranti ini' : 'Sesi ini sahaja'}`; }
 function render() {
   const tick = Date.now(); sessionBurn += result.adjusted / DAY * (tick - lastTick); lastTick = tick;
-  now = new Date(); result = calculate(profile, cuts, now);
+  now = new Date(); result = calculate(profile, cuts, now, ledger);
   const r = result, state = health(r.hp), active = Object.values(cuts).some(Boolean);
   document.body.classList.toggle('saving-active', active);
   const healthColor = document.documentElement.dataset.theme === 'light'
@@ -89,14 +91,14 @@ function render() {
   $('extra-days').innerHTML = `${Number.isFinite(extra) ? `+${money(extra, 1)}` : '∞'} <small>hari</small>`;
   $('saving-result-note').textContent = r.balance <= 0 ? `Potongan jimat ${rm(r.saved)} sehari, tetapi tidak memulihkan defisit lepas.` : r.saved > 0 ? `Kurang ${rm(r.saved)} sehari. Jimat ${rm(r.saved * r.period.remaining)} hingga gaji seterusnya.` : 'Aktifkan pilihan di atas untuk tengok bezanya.';
   $('chart-summary').innerHTML = safe ? `↗ Sampai hari gaji dengan baki <strong>${rm(r.projected)}</strong>${active ? ` · ${rm(r.saved * r.period.remaining)} lebih baik daripada sekarang.` : '. Cuba simulasi untuk tambah ruang bernafas.'}` : `↘ Unjuran defisit <strong>${rm(-r.projected)}</strong> sebelum gaji. ${active ? 'Penjimatan ini masih belum cukup untuk tutup jurang.' : 'Cuba potong belanja di panel penjimatan.'}`;
-  const variable = r.daily * r.period.elapsed + r.adjusted * r.period.remaining;
+  const variable = r.spent + r.adjusted * r.period.remaining;
   const total = Math.max(profile.salary, r.fixed + variable, 1);
   $('fixed-segment').style.width = `${r.fixed / total * 100}%`;
   $('variable-segment').style.width = `${variable / total * 100}%`;
   $('left-segment').style.width = `${Math.max(0, r.projected) / total * 100}%`;
   $('fixed-total').textContent = rm(r.fixed, 0); $('variable-total').textContent = rm(variable, 0); $('left-total').textContent = rm(r.projected, 0);
   $('burn-chart').setAttribute('aria-label', `Unjuran ${Math.round(r.period.length)} hari. Baki awal ${rm(r.disposable)}. Baki pada hari gaji ${rm(r.projected)}. Belanja sekarang ${rm(r.baseProjected)}.`);
-  drawChart(); updateStorageLabel();
+  drawChart(); updateStorageLabel(); renderTools();
 }
 const fields = [
   ['PENDAPATAN', [['salary', 'Gaji bersih bulanan'], ['payday', 'Tarikh gaji (1–31)']]],
@@ -151,8 +153,10 @@ function drawChart() {
   ctx.fillStyle = (light ? '#a44835' : '#dc9589'); ctx.textAlign = 'left'; ctx.fillText('RM0', pad.l + 5, y(0) - 6);
   ctx.strokeStyle = (light ? '#8e8a64' : '#60734a'); ctx.beginPath(); ctx.moveTo(x(r.period.length), pad.t); ctx.lineTo(x(r.period.length), h - pad.b); ctx.stroke();
   ctx.fillStyle = (light ? '#686442' : '#bdcfaa'); ctx.textAlign = 'right'; ctx.fillText('GAJI MASUK', w - pad.r, 13);
-  const points = [0, r.period.elapsed, r.period.length];
-  const baseline = d => r.disposable - r.daily * d;
+  const points = [0];
+  for (let d = new Date(r.period.start.getFullYear(), r.period.start.getMonth(), r.period.start.getDate() + 1); d < now; d.setDate(d.getDate() + 1)) points.push((d - r.period.start) / DAY);
+  points.push(r.period.elapsed, r.period.length);
+  const baseline = d => d <= r.period.elapsed ? r.disposable - spendingTo(profile, ledger, r.period.start, new Date(r.period.start.getTime() + d * DAY), now) : r.balance - r.daily * (d - r.period.elapsed);
   const planned = d => d <= r.period.elapsed ? baseline(d) : r.balance - r.adjusted * (d - r.period.elapsed);
   ctx.setLineDash([]); ctx.beginPath(); points.forEach((d, i) => i === 0 ? ctx.moveTo(x(d), y(baseline(d))) : ctx.lineTo(x(d), y(baseline(d))));
   ctx.lineTo(x(r.period.length), y(0)); ctx.lineTo(x(0), y(0)); ctx.closePath();
@@ -164,8 +168,8 @@ function drawChart() {
   ctx.setLineDash([3, 4]); ctx.lineWidth = 1; ctx.strokeStyle = (light ? '#9b8e78' : '#879477'); ctx.beginPath(); ctx.moveTo(todayX, pad.t); ctx.lineTo(todayX, h - pad.b); ctx.stroke();
   ctx.setLineDash([]); ctx.fillStyle = (light ? '#98512f' : '#cfdaa1'); ctx.beginPath(); ctx.arc(todayX, y(r.balance), 4, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = (light ? '#fffcf6' : '#182012'); ctx.lineWidth = 3; ctx.stroke();
   ctx.fillStyle = (light ? '#73634e' : '#c4cdb8'); ctx.textAlign = r.period.elapsed > r.period.length * .8 ? 'right' : 'center'; ctx.fillText('HARI INI', todayX, pad.t - 6);
-  const zeroDay = r.disposable > 0 && r.daily > 0 ? r.disposable / r.daily : 0;
-  if (zeroDay <= r.period.length) { ctx.fillStyle = (light ? '#b34438' : '#f48b85'); ctx.beginPath(); ctx.arc(x(zeroDay), y(0), 3, 0, Math.PI * 2); ctx.fill(); }
+  const zeroDay = r.dday ? (r.dday - r.period.start) / DAY : Infinity;
+  if (zeroDay >= 0 && zeroDay <= r.period.length) { ctx.fillStyle = (light ? '#b34438' : '#f48b85'); ctx.beginPath(); ctx.arc(x(zeroDay), y(0), 3, 0, Math.PI * 2); ctx.fill(); }
   const ticks = w < 400 ? 4 : 5;
   for (let i = 0; i <= ticks; i++) { const d = r.period.length * i / ticks; ctx.textAlign = i === 0 ? 'left' : i === ticks ? 'right' : 'center'; ctx.fillStyle = (light ? '#786a57' : '#939d89'); ctx.fillText(shortDate(new Date(r.period.start.getTime() + d * DAY)), x(d), h - 8); }
 }
@@ -173,7 +177,7 @@ $('burn-chart').addEventListener('pointermove', e => {
   if (!chartGeometry) return;
   const box = e.currentTarget.getBoundingClientRect(), g = chartGeometry, local = Math.max(g.pad.l, Math.min(g.w - g.pad.r, e.clientX - box.left));
   const day = (local - g.pad.l) / g.pw * result.period.length;
-  const base = result.disposable - result.daily * day;
+  const base = day <= result.period.elapsed ? result.disposable - spendingTo(profile, ledger, result.period.start, new Date(result.period.start.getTime() + day * DAY), now) : result.balance - result.daily * (day - result.period.elapsed);
   const planned = day <= result.period.elapsed ? base : result.balance - result.adjusted * (day - result.period.elapsed);
   const tip = $('chart-tooltip'); tip.textContent = `${shortDate(new Date(result.period.start.getTime() + day * DAY))}\nSekarang: ${rm(base)}\nSimulasi: ${rm(planned)}`;
   tip.hidden = false; tip.style.left = `${Math.max(0, Math.min(local + 8, g.w - 195))}px`; tip.style.top = '30px';
@@ -202,6 +206,7 @@ $('receipt-open').addEventListener('click', () => { render(); drawReceipt(); $('
 $('receipt-download').addEventListener('click', () => {
   $('receipt-canvas').toBlob(blob => { if (!blob) { toast('Tak berjaya hasilkan resit. Cuba sekali lagi.'); return; } const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = `gaji-survival-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); toast('Resit PNG dah siap untuk disimpan.'); }, 'image/png');
 });
+setupTools();
 render();
 const minute = document.createElement('span'); minute.id = 'minute-rate'; minute.className = 'metric-detail'; minute.textContent = `${rm(result.adjusted / 1440, 3)} / minit`; $('daily-rate').parentElement.append(minute);
 // The ticker is simulated spending elapsed in this session, not a bank transaction feed.

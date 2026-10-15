@@ -1,0 +1,69 @@
+.money-tools { margin-top: 36px; border-top: 1px solid var(--line); padding-top: 30px; scroll-margin-top: 24px; }
+.tools-heading, .tool-actions, .month-nav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tools-heading { justify-content: space-between; margin-bottom: 22px; }
+.tools-heading h2 { font-size: 25px; margin: 0; letter-spacing: -.7px; }
+.tools-heading > span { font-size: 12px; }
+.tool-tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin-bottom: 25px; }
+.tool-tabs button { border: 0; border-bottom: 2px solid transparent; background: none; padding: 14px 0; color: var(--muted); font-size: 13px; min-height: 44px; }
+.tool-tabs button[aria-selected="true"] { color: var(--lime); border-color: var(--lime); }
+.tools-grid { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: 34px; }
+[hidden] { display: none !important; }
+.tool-pane { min-width: 0; }
+.tool-pane + .tool-pane { border-left: 1px solid var(--line); padding-left: 34px; }
+.tool-pane h3, .install-box h3 { font-size: 20px; margin: 0; letter-spacing: -.4px; }
+.tool-help { color: var(--muted); font-size: 12px; line-height: 1.75; margin: 12px 0 20px; }
+.tool-form .field input, .tool-pane .field input, .tool-pane select, #bills-form input { padding: 12px; min-height: 44px; min-width: 0; }
+.tool-pane .field input, .tool-pane select { width: 100%; }
+.tool-pane .field input:invalid { border-color: var(--line); }
+.tool-pane .field input:user-invalid { border-color: #c88574; }
+.tool-pane select { background: #11150f; color: inherit; border: 1px solid var(--line); border-radius: 5px; font: 12px 'Segoe UI', sans-serif; }
+select:focus-visible { outline: 2px solid var(--lime); outline-offset: 4px; }
+.tool-actions { margin-top: 16px; }
+.tool-actions .text-button, .expense-row button, #day-estimate { min-height: 44px; }
+.day-summary { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 24px; padding: 14px 0; border-top: 1px solid var(--line); }
+.day-summary strong { font: 15px var(--mono); }
+.day-summary span { font-size: 11px; color: var(--muted); }
+.expense-list { max-height: 290px; overflow-y: auto; }
+.expense-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 12px; padding: 8px 0; }
+.expense-row strong { font-size: 12px; overflow-wrap: anywhere; display: block; }
+.expense-row small { color: var(--muted); font-size: 10px; }
+.expense-row > span { font: 12px var(--mono); }
+.row-actions { display: flex; gap: 12px; }
+.empty-copy { font-size: 12px; color: var(--muted); padding: 12px 0; line-height: 1.7; }
+.amount-presets { display: flex; gap: 9px; margin-top: 12px; }
+.amount-presets button { border: 1px solid var(--line); background: transparent; border-radius: 4px; padding: 10px 15px; font: 12px var(--mono); min-height: 44px; }
+.scenario-result { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 20px; font-size: 13px; }
+.scenario-result h4 { font-size: 23px; margin: 0 0 18px; letter-spacing: -.6px; color: var(--lime); }
+.scenario-result[data-safe="false"] h4 { color: var(--orange); }
+.scenario-result dl { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; }
+.scenario-result dt { color: var(--muted); font-size: 12px; }
+.scenario-result dd { font: 13px var(--mono); margin: 0; overflow-wrap: anywhere; }
+.scenario-result p { color: var(--muted); font-size: 12px; }
+.month-nav { justify-content: space-between; margin: 22px 0 15px; }
+.month-nav strong { font-size: 14px; }
+.month-nav .button { padding: 5px 13px; font-size: 20px; }
+.bill-calendar { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 5px; }
+.calendar-weekday { text-align: center; color: var(--muted); font: 10px var(--mono); padding-bottom: 8px; }
+.calendar-day { min-height: 43px; border: 1px solid transparent; padding: 6px; font: 11px var(--mono); position: relative; text-align: center; }
+.calendar-day.today { border-color: var(--line); border-radius: 4px; }
+.calendar-day.bill { background: color-mix(in srgb,var(--orange) 12%,transparent); }
+.calendar-day.payday { background: color-mix(in srgb,var(--lime) 18%,transparent); color: var(--lime); }
+.calendar-day small { display: block; font: 8px var(--mono); margin-top: 5px; }
+.bill-list { margin-top: 16px; }
+.bill-row { display: grid; grid-template-columns: 48px minmax(0,1fr) auto; gap: 10px; padding: 10px 0; font-size: 12px; }
+.bill-row time { color: var(--muted); font: 10px var(--mono); }
+.bill-row strong { font: 12px var(--mono); }
+.recap-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 25px 0; }
+.recap-stats span { color: var(--muted); font-size: 11px; display: block; }
+.recap-stats strong { display: block; font: 24px var(--mono); margin-top: 10px; overflow-wrap: anywhere; }
+.recap-category { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; font-size: 12px; }
+.recap-category span:last-child { font-family: var(--mono); }
+.file-label { position: relative; cursor: pointer; }
+.file-label input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.file-label:focus-within { outline: 2px solid var(--lime); outline-offset: 4px; }
+.install-box { border-top: 1px solid var(--line); margin-top: 30px; padding-top: 24px; }
+.quick-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+.quick-actions .button { padding: 8px 14px; font-size: 12px; }
+[data-theme="light"] .tool-pane select { background: #f7f2e9; color: #352f29; border-color: #bdaf9b; }
+@media(max-width:790px) { .tools-grid { gap: 24px; } .tool-pane + .tool-pane { padding-left: 24px; } }
+@media(max-width:620px) { .tools-grid { grid-template-columns: 1fr; gap: 30px; } .tool-pane + .tool-pane { padding: 26px 0 0; border-left: 0; border-top: 1px solid var(--line); } .tools-heading h2 { font-size: 22px; } .tool-tabs { gap: 20px; } .tool-tabs button { font-size: 12px; } .expense-row { gap: 8px; } .row-actions { gap: 8px; } .tools-heading > span { display: none; } }

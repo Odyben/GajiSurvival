@@ -1,14 +1,14 @@
 # Gaji Survival
 
-Offline-first salary survival simulator in Bahasa Melayu. Dark survival HUD, live budget editing, future-only what-if cuts, interactive burn-down chart, local storage, and a downloadable PNG receipt.
+Offline-first salary survival simulator in simple English. Dark survival HUD, live budget editing, future-only what-if cuts, interactive burn-down chart, local storage, and a downloadable PNG receipt.
 
 The control area below the dashboard has three tabs:
 
-- **Belanja harian:** expense entry with category, date, optional note, edit/delete, explicit zero-spend days, and a “Boleh beli ke?” purchase simulator. The shortcut buttons above the dashboard jump here.
-- **Rancang bulan:** monthly bill/payday calendar with configurable due dates and a dated emergency-cost simulator. Bill amounts follow the budget editor. Calendar dates are schedules, not payment confirmations.
+- **Daily spending:** expense entry with category, date, optional note, edit/delete, explicit zero-spend days, and a “Can I afford it?” purchase simulator. The shortcut buttons above the dashboard jump here.
+- **Plan ahead:** monthly bill/payday calendar with configurable due dates and a dated emergency-cost simulator. Bill amounts follow the budget editor. Calendar dates are schedules, not payment confirmations.
 - **Recap & data:** monthly totals and categories, actual-versus-budget comparison for recorded days, JSON backup/restore with validation and confirmation, and app installation.
 
-Save your own budget before recording expenses. Recorded dates replace the estimated spending for that date; enter all variable expenses for each recorded day. Unrecorded dates retain the budget estimate. Fixed bills are already reserved and should not be entered again as daily spending. The remaining part of today and future dates still use the projected daily rate. Editing or deleting the last entry leaves that date recorded (possibly RM0); use “Guna anggaran semula” to restore the estimate for an empty date.
+Save your own budget before recording expenses. Recorded dates replace the estimated spending for that date; enter all variable expenses for each recorded day. Unrecorded dates retain the budget estimate. Fixed bills are already reserved and should not be entered again as daily spending. The remaining part of today and future dates still use the projected daily rate. Editing or deleting the last entry leaves that date recorded (possibly RM0); use “Use the estimate for this date” to restore the estimate for an empty date.
 
 Recap captures the daily budget when a date is first recorded, so later budget edits do not rewrite that comparison. It includes only recorded days and does not treat missing dates as zero spending. The current month shows the current cycle's projected closing balance; historical closing balances are unavailable without a historical snapshot. Purchase and emergency scenarios are independent previews and never create transactions.
 
@@ -48,3 +48,9 @@ Fixed bills are deducted at the start of the salary cycle. On unrecorded days, d
 Example numbers are labeled until a budget is saved. Data stays in the current browser's local storage; when storage is unavailable the app remains usable for the session. Closing the editor without saving cancels its live preview. Exported receipts contain financial figures, explicitly noted in the export dialog.
 
 The original specification remains unchanged. The implementation uses native browser APIs instead of the proposed React/Chart.js dependencies because npm network access was unavailable in the build environment.
+
+## Responsive layout
+
+The interface uses English labels, dates, chart text, receipt text, validation messages and install instructions. The Gaji Survival brand name and existing storage keys stay the same. Saved user notes are preserved as entered.
+
+Phone layouts use a separate navigation row, larger text and touch targets, 16px form inputs, and a single form column on screens up to 420px wide. Tabs and dialogs were checked at 320, 360, 390, 430, 768, 1024 and 1440 CSS pixels.

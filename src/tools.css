@@ -67,3 +67,86 @@ select:focus-visible { outline: 2px solid var(--lime); outline-offset: 4px; }
 [data-theme="light"] .tool-pane select { background: #f7f2e9; color: #352f29; border-color: #bdaf9b; }
 @media(max-width:790px) { .tools-grid { gap: 24px; } .tool-pane + .tool-pane { padding-left: 24px; } }
 @media(max-width:620px) { .tools-grid { grid-template-columns: 1fr; gap: 30px; } .tool-pane + .tool-pane { padding: 26px 0 0; border-left: 0; border-top: 1px solid var(--line); } .tools-heading h2 { font-size: 22px; } .tool-tabs { gap: 20px; } .tool-tabs button { font-size: 12px; } .expense-row { gap: 8px; } .row-actions { gap: 8px; } .tools-heading > span { display: none; } }
+
+/* Let longer English labels wrap, while keeping controls comfortable on phones. */
+.field, .field-control, .metrics > div, .cut-copy { min-width: 0; }
+.field input { min-width: 0; }
+.balance[data-long="true"] strong { font-size: clamp(24px, 3.5vw, 48px); letter-spacing: -1px; }
+.button { max-width: 100%; white-space: normal; }
+.scenario-result dl { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.scenario-result dd { text-align: right; }
+.tool-pane > .panel-top { flex-wrap: wrap; }
+.expense-row > span, .bill-row strong { overflow-wrap: anywhere; }
+.metrics strong { white-space: normal; overflow-wrap: anywhere; }
+.close-button { width: 44px; height: 44px; }
+@media(max-width:620px) {
+  .topbar { height: auto; min-height: 70px; flex-wrap: wrap; padding: 12px 17px 0; gap: 8px 12px; }
+  .topbar .brand { font-size: 21px; }
+  .topbar nav { order: 3; flex-basis: 100%; gap: 28px; height: 44px; font-size: 13px; }
+  .topbar nav a { min-height: 44px; }
+  .topbar .theme-toggle { margin-left: auto; width: 44px; min-height: 44px; padding: 0; }
+  .topbar .theme-label { display: none; }
+  .topbar .theme-toggle + .small { margin-left: 0; width: 44px; min-height: 44px; }
+  .page-heading { display: block; padding-bottom: 0; }
+  .page-heading .button { position: static; margin-top: 20px; min-height: 44px; font-size: 13px; }
+  .page-heading p { font-size: 14px; max-width: none; }
+  .quick-actions .button { flex: 1; font-size: 13px; }
+  .eyebrow, .section-kicker, .status-tag, .demo-label { font-size: 10px; }
+  .period-strip { font-size: 11px; flex-wrap: wrap; }
+  .health-caption { flex-wrap: wrap; gap: 8px; }
+  .health-caption h2 { font-size: 15px; }
+  .health-caption > span, .hp-labels { font-size: 10px; }
+  .hp-labels { flex-wrap: wrap; gap: 8px; }
+  .health-bottom { font-size: 12px; line-height: 1.6; }
+  .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+  .metrics > div, .metrics > div:first-child { border: 0; padding: 0; }
+  .metrics > div:first-child { grid-column: 1 / -1; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+  .metric-label { font-size: 10px; letter-spacing: .4px; }
+  .metric-detail { font-size: 12px; }
+  .metrics strong { font-size: 28px; }
+  .metrics strong small { font-size: 13px; }
+  .chart-heading { flex-wrap: wrap; gap: 10px; }
+  .chart-heading h2 { font-size: 19px; }
+  .chart-heading p, .breakdown p, .chart-summary { font-size: 12px; }
+  .chart-period, .chart-legend, .chart-unit { font-size: 10px; }
+  .chart-legend { flex-wrap: wrap; gap: 12px; }
+  .allocation-labels { font-size: 12px; flex-wrap: wrap; }
+  .deadline-date { font-size: clamp(26px, 8vw, 38px); overflow-wrap: anywhere; }
+  .deadline-message, .deadline-time, .cut-copy small, .saving-result p { font-size: 12px; }
+  .cut-copy strong { font-size: 14px; }
+  .saving-result > span { font-size: 10px; }
+  .tool-tabs { gap: 0; justify-content: space-between; }
+  .tool-tabs button { font-size: 13px; padding-inline: 4px; }
+  .field { font-size: 13px; }
+  .field input, .tool-pane select { font-size: 16px; min-height: 48px; }
+  .field-control span { top: 16px; }
+  .tool-form .field input, .tool-pane .field input, .tool-pane select, #bills-form input { min-height: 48px; }
+  .tool-help, .dialog-intro, .guide-body, .form-error, .empty-copy { font-size: 13px; }
+  .text-button { font-size: 12px; min-height: 44px; display: inline-flex; align-items: center; }
+  .tool-actions { gap: 8px 16px; }
+  .expense-row { grid-template-columns: minmax(0,1fr) minmax(75px,auto); padding-block: 12px; }
+  .expense-row strong, .expense-row > span { font-size: 13px; }
+  .expense-row > span { text-align: right; }
+  .expense-row small, .day-summary span { font-size: 12px; }
+  .row-actions { grid-column: 1 / -1; justify-content: flex-end; gap: 16px; }
+  .row-actions button { min-width: 44px; }
+  .calendar-day { padding-inline: 2px; font-size: 12px; }
+  .calendar-weekday { font-size: 11px; }
+  .bill-row { grid-template-columns: 44px minmax(0,1fr) minmax(60px,auto); }
+  .bill-row strong { text-align: right; }
+  .scenario-result dt, .scenario-result dd, .scenario-result p { font-size: 13px; }
+  .scenario-result dl { column-gap: 12px; }
+  .form-footer > span, .receipt-note, footer { font-size: 12px; }
+  footer .text-button { font-size: 12px; margin-left: 0; }
+  .toast { bottom: max(16px, env(safe-area-inset-bottom)); font-size: 13px; width: max-content; max-width: calc(100vw - 32px); }
+  dialog { padding: 22px 18px; }
+}
+@media(max-width:420px) {
+  .field-grid { grid-template-columns: minmax(0,1fr); }
+  #panel-recap .panel-top > .field { width: 100%; }
+  .balance strong { font-size: clamp(32px, 12vw, 50px); }
+  .balance[data-long="true"] strong { font-size: 24px; }
+  .balance[data-long="true"] .balance-cents { font-size: 18px; }
+  .balance[data-long="true"] > span:first-child { font-size: 14px; }
+  .tool-actions > .button, #restore-dialog .tool-actions > .button { width: 100%; }
+}

@@ -5,8 +5,8 @@ export const noCuts: Cuts = { coffee: false, meals: false, leisure: false };
 export const DAY = 86400000;
 export type Expense = { id: string; date: string; amount: number; category: string; note: string };
 export type Ledger = { expenses: Expense[]; days: Record<string, number> };
-export const categories: Record<string, string> = { meals: 'Makan', coffee: 'Kopi & minuman', petrol: 'Petrol & pengangkutan', shopping: 'Shopping', leisure: 'Hiburan', misc: 'Lain-lain' };
-export const billNames: Record<string, string> = { rent: 'Sewa / rumah', vehicle: 'Kereta / motor', utilities: 'Utiliti & Wi-Fi', debt: 'Hutang / lain-lain' };
+export const categories: Record<string, string> = { meals: 'Food', coffee: 'Coffee & drinks', petrol: 'Fuel & transport', shopping: 'Shopping', leisure: 'Leisure', misc: 'Other' };
+export const billNames: Record<string, string> = { rent: 'Rent / home', vehicle: 'Car / motorbike', utilities: 'Utilities & Wi-Fi', debt: 'Debt / other' };
 export function emptyLedger(): Ledger { return { expenses: [], days: {} }; }
 export function dateKey(d: Date) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 export function parseDay(s: string) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
@@ -88,9 +88,9 @@ export function validateProfile(value: unknown): value is Profile {
   return Object.keys(defaults).every(k => typeof p[k as keyof Profile] === 'number' && Number.isFinite(p[k as keyof Profile]) && p[k as keyof Profile] >= 0 && p[k as keyof Profile] <= 10000000) && Number.isInteger(p.payday) && p.payday >= 1 && p.payday <= 31;
 }
 export function health(hp: number) {
-  if (hp >= 75) return { text: 'Sultan awal bulan', color: '#c7f36b', label: 'SELAMAT' };
-  if (hp >= 40) return { text: 'Masih boleh bernafas.', color: '#e7c46a', label: 'BERHATI-HATI' };
-  if (hp >= 15) return { text: 'Zon catuan makanan.', color: '#f0a46b', label: 'BERJAGA-JAGA' };
-  if (hp > 0) return { text: 'Mod Maggi aktif.', color: '#f48b85', label: 'KRITIKAL' };
-  return { text: 'Tinggal doa & harapan.', color: '#f48b85', label: 'DUIT HABIS' };
+  if (hp >= 75) return { text: 'Masih selesa. Jangan terus shopping.', color: '#c7f36b', label: 'SAFE' };
+  if (hp >= 40) return { text: 'Masih boleh bernafas.', color: '#e7c46a', label: 'TAKE CARE' };
+  if (hp >= 15) return { text: 'Masa untuk slow sikit.', color: '#f0a46b', label: 'RUNNING LOW' };
+  if (hp > 0) return { text: 'Bajet ketat. Kita adjust dulu.', color: '#f48b85', label: 'CRITICAL' };
+  return { text: 'Baki dah habis. Jom semak plan.', color: '#f48b85', label: 'OUT OF MONEY' };
 }

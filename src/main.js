@@ -5,6 +5,30 @@ const shortDate = d => d.toLocaleDateString('ms-MY', { day: 'numeric', month: 's
 const fullDate = d => d.toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
 const clockTime = d => d.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false });
 const STORE = 'gaji-survival-v1';
+const THEME_STORE = 'gaji-survival-theme';
+const themeToggle = document.createElement('button');
+themeToggle.id = 'theme-toggle';
+themeToggle.type = 'button';
+themeToggle.className = 'button theme-toggle';
+themeToggle.innerHTML = '<span class="theme-glyph" aria-hidden="true"></span><span class="theme-label"></span>';
+themeToggle.setAttribute('aria-label', 'Tema cerah');
+$('guide-open').before(themeToggle);
+function syncThemeControl() {
+  const light = document.documentElement.dataset.theme === 'light';
+  themeToggle.setAttribute('aria-pressed', String(light));
+  themeToggle.title = light ? 'Tukar ke dark mode' : 'Tukar ke light mode';
+  themeToggle.querySelector('.theme-label').textContent = light ? 'Light' : 'Dark';
+  document.querySelector('meta[name="theme-color"]').content = light ? '#f6f3ec' : '#121412';
+}
+syncThemeControl();
+themeToggle.addEventListener('click', () => {
+  const theme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem(THEME_STORE, theme); }
+  catch { toast('Tema ditukar untuk sesi ini. Browser tidak benarkan simpanan.'); }
+  syncThemeControl();
+  render();
+});
 let profile = { ...defaults }, cuts = { ...noCuts }, custom = false, storageAvailable = true;
 try {
   const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
@@ -26,11 +50,14 @@ function render() {
   now = new Date(); result = calculate(profile, cuts, now);
   const r = result, state = health(r.hp), active = Object.values(cuts).some(Boolean);
   document.body.classList.toggle('saving-active', active);
-  document.documentElement.style.setProperty('--health-color', state.color);
+  const healthColor = document.documentElement.dataset.theme === 'light'
+    ? (r.hp >= 75 ? '#536b39' : r.hp >= 40 ? '#896019' : r.hp >= 15 ? '#a14d22' : '#b34438')
+    : state.color;
+  document.documentElement.style.setProperty('--health-color', healthColor);
   $('demo-label').hidden = custom;
   $('cycle-label').textContent = `Kitaran ${shortDate(r.period.start)} — ${shortDate(r.period.end)} ${r.period.end.getFullYear()}`;
   $('today-label').textContent = `Hari ini, ${shortDate(now)}`;
-  $('health-tag').textContent = state.label; $('health-tag').style.color = state.color;
+  $('health-tag').textContent = state.label; $('health-tag').style.color = healthColor;
   const parts = money(Math.max(0, r.balance)).split('.');
   $('balance').textContent = parts[0]; $('balance-cents').textContent = `.${parts[1]}`;
   $('health-title').textContent = state.text;
@@ -104,6 +131,7 @@ document.querySelectorAll('[data-cut]').forEach(input => input.addEventListener(
 $('cuts-reset').addEventListener('click', () => { cuts = { ...noCuts }; persist(); render(); toast('Simulasi direset. Bajet asal dikekalkan.'); });
 let chartGeometry;
 function drawChart() {
+  const light = document.documentElement.dataset.theme === 'light';
   const canvas = $('burn-chart'), ctx = canvas.getContext('2d'), box = canvas.getBoundingClientRect();
   if (!ctx || !box.width) return;
   const dpr = window.devicePixelRatio || 1, w = box.width, h = box.height;
@@ -116,30 +144,30 @@ function drawChart() {
   const compact = n => Math.abs(n) >= 10000 ? `${(n / 1000).toFixed(0)}k` : money(n, 0);
   for (let i = 0; i <= 4; i++) {
     const v = min + (max - min) * i / 4, yy = y(v);
-    ctx.strokeStyle = '#30352c'; ctx.setLineDash([3, 5]); ctx.beginPath(); ctx.moveTo(pad.l, yy); ctx.lineTo(w - pad.r, yy); ctx.stroke();
-    ctx.fillStyle = '#939d89'; ctx.textAlign = 'right'; ctx.fillText(compact(v), pad.l - 9, yy + 3);
+    ctx.strokeStyle = (light ? '#dfd6c8' : '#30352c'); ctx.setLineDash([3, 5]); ctx.beginPath(); ctx.moveTo(pad.l, yy); ctx.lineTo(w - pad.r, yy); ctx.stroke();
+    ctx.fillStyle = (light ? '#786a57' : '#939d89'); ctx.textAlign = 'right'; ctx.fillText(compact(v), pad.l - 9, yy + 3);
   }
-  ctx.setLineDash([4, 4]); ctx.strokeStyle = '#ad6e64'; ctx.beginPath(); ctx.moveTo(pad.l, y(0)); ctx.lineTo(w - pad.r, y(0)); ctx.stroke();
-  ctx.fillStyle = '#dc9589'; ctx.textAlign = 'left'; ctx.fillText('RM0', pad.l + 5, y(0) - 6);
-  ctx.strokeStyle = '#60734a'; ctx.beginPath(); ctx.moveTo(x(r.period.length), pad.t); ctx.lineTo(x(r.period.length), h - pad.b); ctx.stroke();
-  ctx.fillStyle = '#bdcfaa'; ctx.textAlign = 'right'; ctx.fillText('GAJI MASUK', w - pad.r, 13);
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = (light ? '#b36655' : '#ad6e64'); ctx.beginPath(); ctx.moveTo(pad.l, y(0)); ctx.lineTo(w - pad.r, y(0)); ctx.stroke();
+  ctx.fillStyle = (light ? '#a44835' : '#dc9589'); ctx.textAlign = 'left'; ctx.fillText('RM0', pad.l + 5, y(0) - 6);
+  ctx.strokeStyle = (light ? '#8e8a64' : '#60734a'); ctx.beginPath(); ctx.moveTo(x(r.period.length), pad.t); ctx.lineTo(x(r.period.length), h - pad.b); ctx.stroke();
+  ctx.fillStyle = (light ? '#686442' : '#bdcfaa'); ctx.textAlign = 'right'; ctx.fillText('GAJI MASUK', w - pad.r, 13);
   const points = [0, r.period.elapsed, r.period.length];
   const baseline = d => r.disposable - r.daily * d;
   const planned = d => d <= r.period.elapsed ? baseline(d) : r.balance - r.adjusted * (d - r.period.elapsed);
   ctx.setLineDash([]); ctx.beginPath(); points.forEach((d, i) => i === 0 ? ctx.moveTo(x(d), y(baseline(d))) : ctx.lineTo(x(d), y(baseline(d))));
   ctx.lineTo(x(r.period.length), y(0)); ctx.lineTo(x(0), y(0)); ctx.closePath();
-  const gradient = ctx.createLinearGradient(0, pad.t, 0, h - pad.b); gradient.addColorStop(0, '#f0a46b1f'); gradient.addColorStop(1, '#f0a46b00'); ctx.fillStyle = gradient; ctx.fill();
+  const gradient = ctx.createLinearGradient(0, pad.t, 0, h - pad.b); gradient.addColorStop(0, (light ? '#b77a2526' : '#f0a46b1f')); gradient.addColorStop(1, (light ? '#b77a2500' : '#f0a46b00')); ctx.fillStyle = gradient; ctx.fill();
   function line(fn, color, dashed) { ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash(dashed ? [5, 5] : []); ctx.beginPath(); points.forEach((d, i) => i === 0 ? ctx.moveTo(x(d), y(fn(d))) : ctx.lineTo(x(d), y(fn(d)))); ctx.stroke(); }
-  line(baseline, '#f0a46b', false);
-  if (r.saved > 0) line(planned, '#c7f36b', true);
+  line(baseline, (light ? '#a76824' : '#f0a46b'), false);
+  if (r.saved > 0) line(planned, (light ? '#98512f' : '#c7f36b'), true);
   const todayX = x(r.period.elapsed);
-  ctx.setLineDash([3, 4]); ctx.lineWidth = 1; ctx.strokeStyle = '#879477'; ctx.beginPath(); ctx.moveTo(todayX, pad.t); ctx.lineTo(todayX, h - pad.b); ctx.stroke();
-  ctx.setLineDash([]); ctx.fillStyle = '#cfdaa1'; ctx.beginPath(); ctx.arc(todayX, y(r.balance), 4, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#182012'; ctx.lineWidth = 3; ctx.stroke();
-  ctx.fillStyle = '#c4cdb8'; ctx.textAlign = r.period.elapsed > r.period.length * .8 ? 'right' : 'center'; ctx.fillText('HARI INI', todayX, pad.t - 6);
+  ctx.setLineDash([3, 4]); ctx.lineWidth = 1; ctx.strokeStyle = (light ? '#9b8e78' : '#879477'); ctx.beginPath(); ctx.moveTo(todayX, pad.t); ctx.lineTo(todayX, h - pad.b); ctx.stroke();
+  ctx.setLineDash([]); ctx.fillStyle = (light ? '#98512f' : '#cfdaa1'); ctx.beginPath(); ctx.arc(todayX, y(r.balance), 4, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = (light ? '#fffcf6' : '#182012'); ctx.lineWidth = 3; ctx.stroke();
+  ctx.fillStyle = (light ? '#73634e' : '#c4cdb8'); ctx.textAlign = r.period.elapsed > r.period.length * .8 ? 'right' : 'center'; ctx.fillText('HARI INI', todayX, pad.t - 6);
   const zeroDay = r.disposable > 0 && r.daily > 0 ? r.disposable / r.daily : 0;
-  if (zeroDay <= r.period.length) { ctx.fillStyle = '#f48b85'; ctx.beginPath(); ctx.arc(x(zeroDay), y(0), 3, 0, Math.PI * 2); ctx.fill(); }
+  if (zeroDay <= r.period.length) { ctx.fillStyle = (light ? '#b34438' : '#f48b85'); ctx.beginPath(); ctx.arc(x(zeroDay), y(0), 3, 0, Math.PI * 2); ctx.fill(); }
   const ticks = w < 400 ? 4 : 5;
-  for (let i = 0; i <= ticks; i++) { const d = r.period.length * i / ticks; ctx.textAlign = i === 0 ? 'left' : i === ticks ? 'right' : 'center'; ctx.fillStyle = '#939d89'; ctx.fillText(shortDate(new Date(r.period.start.getTime() + d * DAY)), x(d), h - 8); }
+  for (let i = 0; i <= ticks; i++) { const d = r.period.length * i / ticks; ctx.textAlign = i === 0 ? 'left' : i === ticks ? 'right' : 'center'; ctx.fillStyle = (light ? '#786a57' : '#939d89'); ctx.fillText(shortDate(new Date(r.period.start.getTime() + d * DAY)), x(d), h - 8); }
 }
 $('burn-chart').addEventListener('pointermove', e => {
   if (!chartGeometry) return;

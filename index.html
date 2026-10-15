@@ -1,5 +1,9 @@
 <!doctype html>
-<html lang="ms"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#121412"><meta name="description" content="Tengok berapa lama gaji anda boleh bertahan. Simulasikan penjimatan dan rancang sampai hari gaji."><title>Gaji Survival — Biar gaji panjang umur.</title><style>/* APP_CSS */</style></head>
+<html lang="ms"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#121412"><meta name="description" content="Tengok berapa lama gaji anda boleh bertahan. Simulasikan penjimatan dan rancang sampai hari gaji."><title>Gaji Survival — Biar gaji panjang umur.</title><script>
+// Apply the saved choice before the first paint; keep dark as the default.
+try { document.documentElement.dataset.theme = localStorage.getItem('gaji-survival-theme') === 'light' ? 'light' : 'dark'; }
+catch { document.documentElement.dataset.theme = 'dark'; }
+</script><style>/* APP_CSS */</style></head>
 <body>
 <header class="topbar"><a class="brand" href="#" aria-label="Gaji Survival, halaman utama"><span class="brand-mark" aria-hidden="true">g<span>›</span></span><span>gaji<span class="brand-light">survival</span><sup>MY</sup></span></a><nav aria-label="Navigasi utama"><a href="#overview" class="nav-active">Overview</a><a href="#simulation">Simulasi</a></nav><span class="local-label"><span class="status-dot"></span>Disimpan di peranti ini</span><button class="button subtle small" id="guide-open" aria-label="Cara pengiraan">?</button></header>
 <main id="overview">

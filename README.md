@@ -2,6 +2,8 @@
 
 Offline-first salary survival simulator in Bahasa Melayu. Dark survival HUD, live budget editing, future-only what-if cuts, interactive burn-down chart, local storage, and a downloadable PNG receipt.
 
+Use the theme toggle in the top bar to switch between the original dark palette and a warm ivory/amber light palette. Dark is the default; the selected theme persists separately from budget data and is applied before first paint. Charts, financial status colors, inputs and dialogs follow the selected theme.
+
 ## Run
 
 Requires Node.js 22.13+ (tested on Node 24). No package installation is needed.
@@ -18,6 +20,7 @@ Open http://127.0.0.1:5173, or open `dist/index.html` directly. The built HTML c
 
 - `index.html`: app markup and build injection points.
 - `src/style.css`: responsive dark interface.
+- `src/theme.css`: theme toggle and warm light palette overrides.
 - `src/main.js`: interface, chart, storage and receipt export.
 - `src/finance.ts`: typed calculation model.
 - `src/finance.test.ts`: calculation and input-validation tests.

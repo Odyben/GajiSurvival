@@ -29,26 +29,27 @@ themeToggle.addEventListener('click', () => {
   syncThemeControl();
   render();
 });
-let profile = { ...defaults }, cuts = { ...noCuts }, custom = false, storageAvailable = true;
-try {
-  const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
-  if (saved && validateProfile(saved.profile)) {
-    profile = saved.profile; custom = saved.custom === true;
-    for (const key of Object.keys(noCuts)) cuts[key] = saved.cuts?.[key] === true;
-    if (validateLedger(saved.ledger)) ledger = saved.ledger;
-    if (validateDue(saved.billDue)) billDue = saved.billDue;
-  }
-} catch { storageAvailable = false; }
+let profile = { ...defaults }, cuts = { ...noCuts }, custom = false, storageAvailable = true, savedText = null, loadNotice = null;
+try { savedText = localStorage.getItem(STORE); } catch { storageAvailable = false; }
+if (savedText !== null) {
+  let saved;
+  try { saved = JSON.parse(savedText); } catch { /* Unreadable text is kept as a recovery copy below. */ }
+  const restored = restoreData(saved);
+  ({ profile, cuts, custom, ledger, billDue } = restored.data);
+  if (!restored.complete) loadNotice = keepRecoveryCopy(savedText) ? 'Ada data lama yang tak dapat dibaca. Salinan asal disimpan, check Recap & data.' : 'Ada data lama yang tak dapat dibaca, dan browser tak dapat simpan salinan asal.';
+}
 let now = new Date(), result = calculate(profile, cuts, now, ledger), lastTick = Date.now(), sessionBurn = 0, toastTimer;
+// The ticker is simulated spending elapsed in this session, not a bank transaction feed. It pauses while today's logged total is final.
+function accrue() { const tick = Date.now(); if (!result.estimateDelay) sessionBurn += result.adjusted / DAY * (tick - lastTick); lastTick = tick; }
 function toast(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 4000); }
 function persist() {
-  try { localStorage.setItem(STORE, JSON.stringify({ profile, cuts, custom, ledger, billDue })); storageAvailable = true; }
+  try { localStorage.setItem(STORE, JSON.stringify({ version: DATA_VERSION, profile, cuts, custom, ledger, billDue })); storageAvailable = true; }
   catch { storageAvailable = false; toast('Your browser could not save your data. It is available only for this session.'); }
   updateStorageLabel();
 }
 function updateStorageLabel() { document.querySelector('.local-label').innerHTML = `<span class="status-dot"></span>${storageAvailable ? 'Saved on this device' : 'This session only'}`; }
 function render() {
-  const tick = Date.now(); sessionBurn += result.adjusted / DAY * (tick - lastTick); lastTick = tick;
+  accrue();
   now = new Date(); result = calculate(profile, cuts, now, ledger);
   const r = result, state = health(r.hp), active = Object.values(cuts).some(Boolean);
   document.body.classList.toggle('saving-active', active);
@@ -90,9 +91,9 @@ function render() {
   document.querySelectorAll('[data-cut]').forEach(input => { input.checked = cuts[input.dataset.cut]; });
   const extra = r.days === Infinity && r.baseDays === Infinity ? 0 : r.days - r.baseDays;
   $('extra-days').innerHTML = `${Number.isFinite(extra) ? `+${money(extra, 1)}` : '∞'} <small>days</small>`;
-  $('saving-result-note').textContent = r.balance <= 0 ? `These cuts save ${rm(r.saved)} a day, but do not cover earlier shortfalls.` : r.saved > 0 ? `Spend ${rm(r.saved)} less a day. Save ${rm(r.saved * r.period.remaining)} until your next payday.` : 'On satu pilihan dulu. Tengok berapa hari boleh tambah.';
-  $('chart-summary').innerHTML = safe ? `↗ Reach payday with <strong>${rm(r.projected)}</strong>${active ? ` · ${rm(r.saved * r.period.remaining)} more than your current plan.` : '. Cuba savings untuk tambah ruang bernafas.'}` : `↘ Estimated shortfall: <strong>${rm(-r.projected)}</strong> before payday. ${active ? 'Savings ini belum cukup untuk tutup jurang.' : 'Cuba cut belanja dalam panel savings.'}`;
-  const variable = r.spent + r.adjusted * r.period.remaining;
+  $('saving-result-note').textContent = r.balance <= 0 ? `These cuts save ${rm(r.saved)} a day, but do not cover earlier shortfalls.` : r.saved > 0 ? `Spend ${rm(r.saved)} less a day. Save ${rm(r.saved * r.estimatedDays)} until your next payday.` : 'On satu pilihan dulu. Tengok berapa hari boleh tambah.';
+  $('chart-summary').innerHTML = safe ? `↗ Reach payday with <strong>${rm(r.projected)}</strong>${active ? ` · ${rm(r.saved * r.estimatedDays)} more than your current plan.` : '. Cuba savings untuk tambah ruang bernafas.'}` : `↘ Estimated shortfall: <strong>${rm(-r.projected)}</strong> before payday. ${active ? 'Savings ini belum cukup untuk tutup jurang.' : 'Cuba cut belanja dalam panel savings.'}`;
+  const variable = r.spent + r.adjusted * r.estimatedDays;
   const total = Math.max(profile.salary, r.fixed + variable, 1);
   $('fixed-segment').style.width = `${r.fixed / total * 100}%`;
   $('variable-segment').style.width = `${variable / total * 100}%`;
@@ -133,6 +134,12 @@ document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('c
 document.querySelectorAll('[data-cut]').forEach(input => input.addEventListener('change', () => { cuts[input.dataset.cut] = input.checked; persist(); render(); }));
 $('cuts-reset').addEventListener('click', () => { cuts = { ...noCuts }; persist(); render(); toast('Savings direset. Bajet asal masih sama.'); });
 let chartGeometry;
+// Balance `d` days into the cycle: recorded history up to now, then the estimate once spending resumes.
+function balanceAt(d, rate) {
+  const r = result;
+  if (d <= r.period.elapsed) return r.disposable - spendingTo(profile, ledger, r.period.start, new Date(r.period.start.getTime() + d * DAY), now);
+  return r.balance - rate * Math.max(0, d - r.period.elapsed - r.estimateDelay);
+}
 function drawChart() {
   const light = document.documentElement.dataset.theme === 'light';
   const canvas = $('burn-chart'), ctx = canvas.getContext('2d'), box = canvas.getBoundingClientRect();
@@ -156,9 +163,8 @@ function drawChart() {
   ctx.fillStyle = (light ? '#686442' : '#bdcfaa'); ctx.textAlign = 'right'; ctx.fillText('PAYDAY', w - pad.r, 13);
   const points = [0];
   for (let d = new Date(r.period.start.getFullYear(), r.period.start.getMonth(), r.period.start.getDate() + 1); d < now; d.setDate(d.getDate() + 1)) points.push((d - r.period.start) / DAY);
-  points.push(r.period.elapsed, r.period.length);
-  const baseline = d => d <= r.period.elapsed ? r.disposable - spendingTo(profile, ledger, r.period.start, new Date(r.period.start.getTime() + d * DAY), now) : r.balance - r.daily * (d - r.period.elapsed);
-  const planned = d => d <= r.period.elapsed ? baseline(d) : r.balance - r.adjusted * (d - r.period.elapsed);
+  points.push(r.period.elapsed, r.period.elapsed + r.estimateDelay, r.period.length);
+  const baseline = d => balanceAt(d, r.daily), planned = d => balanceAt(d, r.adjusted);
   ctx.setLineDash([]); ctx.beginPath(); points.forEach((d, i) => i === 0 ? ctx.moveTo(x(d), y(baseline(d))) : ctx.lineTo(x(d), y(baseline(d))));
   ctx.lineTo(x(r.period.length), y(0)); ctx.lineTo(x(0), y(0)); ctx.closePath();
   const gradient = ctx.createLinearGradient(0, pad.t, 0, h - pad.b); gradient.addColorStop(0, (light ? '#b77a2526' : '#f0a46b1f')); gradient.addColorStop(1, (light ? '#b77a2500' : '#f0a46b00')); ctx.fillStyle = gradient; ctx.fill();
@@ -178,8 +184,7 @@ $('burn-chart').addEventListener('pointermove', e => {
   if (!chartGeometry) return;
   const box = e.currentTarget.getBoundingClientRect(), g = chartGeometry, local = Math.max(g.pad.l, Math.min(g.w - g.pad.r, e.clientX - box.left));
   const day = (local - g.pad.l) / g.pw * result.period.length;
-  const base = day <= result.period.elapsed ? result.disposable - spendingTo(profile, ledger, result.period.start, new Date(result.period.start.getTime() + day * DAY), now) : result.balance - result.daily * (day - result.period.elapsed);
-  const planned = day <= result.period.elapsed ? base : result.balance - result.adjusted * (day - result.period.elapsed);
+  const base = balanceAt(day, result.daily), planned = balanceAt(day, result.adjusted);
   const tip = $('chart-tooltip'); tip.textContent = `${shortDate(new Date(result.period.start.getTime() + day * DAY))}\nCurrent plan: ${rm(base)}\nWith savings: ${rm(planned)}`;
   tip.hidden = false; tip.style.left = `${Math.max(0, Math.min(local + 8, g.w - 195))}px`; tip.style.top = '30px';
 });
@@ -209,11 +214,11 @@ $('receipt-download').addEventListener('click', () => {
 });
 setupTools();
 render();
+if (loadNotice) toast(loadNotice);
 const minute = document.createElement('span'); minute.id = 'minute-rate'; minute.className = 'metric-detail'; minute.textContent = `${rm(result.adjusted / 1440, 3)} / minute`; $('daily-rate').parentElement.append(minute);
-// The ticker is simulated spending elapsed in this session, not a bank transaction feed.
 const live = document.createElement('span'); live.className = 'metric-detail'; live.innerHTML = 'Live <span class="live-value" id="live-burn">RM0.00 / session</span>'; $('daily-rate').parentElement.append(live);
-setInterval(() => {
-  const tick = Date.now(); sessionBurn += result.adjusted / DAY * (tick - lastTick); lastTick = tick;
-  $('live-burn').textContent = `${rm(sessionBurn)} / session`;
-}, 1000);
-setInterval(() => { if (!$('profile-dialog').open && !$('receipt-dialog').open) render(); }, 60000);
+setInterval(() => { accrue(); $('live-burn').textContent = `${rm(sessionBurn)} / session`; }, 1000);
+const refresh = () => { if (!$('profile-dialog').open && !$('receipt-dialog').open) render(); };
+setInterval(refresh, 60000);
+// Phones pause timers in the background, so refresh as soon as the app is visible again.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });

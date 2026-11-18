@@ -12,13 +12,28 @@ export function dateKey(d: Date) { return `${d.getFullYear()}-${String(d.getMont
 export function parseDay(s: string) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
 export function validDay(s: unknown): s is string { return typeof s === 'string' && /^20\d{2}-\d{2}-\d{2}$/.test(s) && dateKey(parseDay(s)) === s; }
 export function validMoney(n: unknown): n is number { return typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 10000000 && Math.abs(n * 100 - Math.round(n * 100)) < .00001; }
-export function validateLedger(value: unknown): value is Ledger {
-  if (!value || typeof value !== 'object') return false;
-  const l = value as Ledger;
-  if (!Array.isArray(l.expenses) || l.expenses.length > 10000 || !l.days || typeof l.days !== 'object' || Array.isArray(l.days) || Object.keys(l.days).length > 36600) return false;
-  if (!Object.entries(l.days).every(([d, n]) => validDay(d) && typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 40000000)) return false;
-  return l.expenses.every(e => e && typeof e.id === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(e.id) && validDay(e.date) && Object.hasOwn(l.days, e.date) && validMoney(e.amount) && e.amount > 0 && Object.hasOwn(categories, e.category) && typeof e.note === 'string' && e.note.length <= 120) && new Set(l.expenses.map(e => e.id)).size === l.expenses.length;
+const validBudget = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 40000000;
+function validExpense(value: unknown): value is Expense {
+  const e = value as Expense;
+  return !!e && typeof e === 'object' && typeof e.id === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(e.id) && validDay(e.date) && validMoney(e.amount) && e.amount > 0 && Object.hasOwn(categories, e.category) && typeof e.note === 'string' && e.note.length <= 120;
 }
+// Keeps every readable record instead of rejecting the whole ledger; `dropped` counts what could not be kept.
+export function salvageLedger(value: unknown, fallbackBudget: number) {
+  const source = (value && typeof value === 'object' ? value : {}) as { expenses?: unknown; days?: unknown };
+  const rawDays = source.days && typeof source.days === 'object' && !Array.isArray(source.days) ? source.days as Record<string, unknown> : {};
+  const rawExpenses: unknown[] = Array.isArray(source.expenses) ? source.expenses : [];
+  let dropped = (rawDays === source.days ? 0 : 1) + (rawExpenses === source.expenses ? 0 : 1);
+  const days: Record<string, number> = {}, expenses: Expense[] = [], ids = new Set<string>();
+  for (const [date, budget] of Object.entries(rawDays)) { if (validDay(date) && validBudget(budget)) days[date] = budget; else dropped++; }
+  for (const e of rawExpenses) {
+    if (!validExpense(e) || ids.has(e.id) || expenses.length >= 10000) { dropped++; continue; }
+    ids.add(e.id); days[e.date] ??= fallbackBudget;
+    expenses.push({ id: e.id, date: e.date, amount: e.amount, category: e.category, note: e.note });
+  }
+  return { ledger: { expenses, days } as Ledger, dropped };
+}
+// A date whose last entry moved or was deleted goes back to the estimate instead of counting as RM0 spending.
+export function releaseEmptyDay(ledger: Ledger, date: string) { if (!ledger.expenses.some(e => e.date === date)) delete ledger.days[date]; }
 // Recorded days replace the estimate. Today is spread over its elapsed portion for chart history.
 export function spendingTo(p: Profile, ledger: Ledger, start: Date, until: Date, now: Date) {
   const daily = p.meals + p.coffee + p.leisure + p.misc;
@@ -37,9 +52,9 @@ export function spendingTo(p: Profile, ledger: Ledger, start: Date, until: Date,
 }
 export function purchaseImpact(r: ReturnType<typeof calculate>, amount: number, delay = 0) {
   const balance = r.balance - amount, projected = r.projected - amount;
-  const days = balance <= 0 ? 0 : r.adjusted === 0 ? Infinity : balance / r.adjusted;
+  const days = balance <= 0 ? 0 : r.adjusted === 0 ? Infinity : r.estimateDelay + balance / r.adjusted;
   const lostDays = r.days === Infinity && days === Infinity ? 0 : r.days - days;
-  const atEvent = r.balance - r.adjusted * delay - amount;
+  const atEvent = r.balance - r.adjusted * Math.max(0, delay - r.estimateDelay) - amount;
   return { balance, projected, days, lostDays, atEvent, safe: atEvent >= 0 && projected >= 0 };
 }
 export function monthRecap(ledger: Ledger, month: string) {
@@ -70,8 +85,11 @@ export function calculate(p: Profile, cuts: Cuts, now: Date, ledger: Ledger = em
   const adjusted = Math.max(0, daily - saved);
   const spent = spendingTo(p, ledger, period.start, now, now);
   const balance = disposable - spent;
-  const days = balance <= 0 ? 0 : adjusted === 0 ? Infinity : balance / adjusted;
-  const baseDays = balance <= 0 ? 0 : daily === 0 ? Infinity : balance / daily;
+  // A logged day's total is final, today included: estimated spending resumes at the next midnight.
+  const estimateDelay = Object.hasOwn(ledger.days, dateKey(now)) ? (new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime()) / DAY : 0;
+  const estimatedDays = Math.max(0, period.remaining - estimateDelay);
+  const days = balance <= 0 ? 0 : adjusted === 0 ? Infinity : estimateDelay + balance / adjusted;
+  const baseDays = balance <= 0 ? 0 : daily === 0 ? Infinity : estimateDelay + balance / daily;
   let depleted: Date | null = disposable <= 0 ? period.start : null;
   if (balance <= 0 && !depleted) {
     let low = period.start.getTime(), high = now.getTime();
@@ -80,12 +98,36 @@ export function calculate(p: Profile, cuts: Cuts, now: Date, ledger: Ledger = em
   }
   const dday = balance <= 0 ? depleted : Number.isFinite(days) ? finiteDate(now.getTime() + days * DAY) : null;
   const hp = disposable > 0 ? Math.min(100, Math.max(0, balance / disposable * 100)) : 0;
-  return { period, fixed, disposable, daily, saved, adjusted, spent, balance, days, baseDays, dday, hp, projected: balance - adjusted * period.remaining, baseProjected: balance - daily * period.remaining };
+  return { period, fixed, disposable, daily, saved, adjusted, spent, balance, days, baseDays, dday, hp, estimateDelay, estimatedDays, projected: balance - adjusted * estimatedDays, baseProjected: balance - daily * estimatedDays };
 }
 export function validateProfile(value: unknown): value is Profile {
   if (!value || typeof value !== 'object') return false;
   const p = value as Profile;
   return Object.keys(defaults).every(k => typeof p[k as keyof Profile] === 'number' && Number.isFinite(p[k as keyof Profile]) && p[k as keyof Profile] >= 0 && p[k as keyof Profile] <= 10000000) && Number.isInteger(p.payday) && p.payday >= 1 && p.payday <= 31;
+}
+export const DATA_VERSION = 2;
+const validDueDay = (key: string, day: unknown) => Object.hasOwn(billNames, key) && Number.isInteger(day) && (day as number) >= 1 && (day as number) <= 31;
+export function validateDue(value: unknown): value is Record<string, number> { return !!value && typeof value === 'object' && !Array.isArray(value) && Object.entries(value).every(([key, day]) => validDueDay(key, day)); }
+// Saves made before a budget field existed lack it, so that bill or spending line starts at RM0. Salary and payday must be present.
+function migrateProfile(value: unknown): Profile | null {
+  if (!value || typeof value !== 'object') return null;
+  const source = value as Record<string, unknown>;
+  const profile = Object.fromEntries(Object.keys(defaults).map(key => [key, source[key] === undefined && key !== 'salary' && key !== 'payday' ? 0 : source[key]]));
+  return validateProfile(profile) ? profile : null;
+}
+// Reads saved or backed-up data part by part, so one unreadable part never discards the others.
+// Unversioned saves predate DATA_VERSION and share its shape; add upgrades for older versions here when the format changes.
+export function restoreData(value: unknown) {
+  const v = (value && typeof value === 'object' && !Array.isArray(value) ? value : {}) as Record<string, any>;
+  const migrated = migrateProfile(v.profile), profile = migrated ?? { ...defaults };
+  const cuts = Object.fromEntries(Object.keys(noCuts).map(key => [key, v.cuts?.[key] === true])) as Cuts;
+  const salvaged = v.ledger === undefined ? { ledger: emptyLedger(), dropped: 0 } : salvageLedger(v.ledger, profile.meals + profile.coffee + profile.leisure + profile.misc);
+  const dueReadable = v.billDue === undefined || (!!v.billDue && typeof v.billDue === 'object' && !Array.isArray(v.billDue));
+  const dueEntries = dueReadable && v.billDue ? Object.entries(v.billDue) : [];
+  const billDue: Record<string, number> = Object.fromEntries(dueEntries.filter(([key, day]) => validDueDay(key, day)));
+  const skipped = salvaged.dropped + (dueReadable ? dueEntries.length - Object.keys(billDue).length : 1);
+  const newer = typeof v.version === 'number' && v.version > DATA_VERSION, profileLost = !migrated;
+  return { data: { profile, custom: !profileLost && v.custom === true, cuts, ledger: salvaged.ledger, billDue }, newer, profileLost, skipped, complete: !newer && !profileLost && skipped === 0 };
 }
 export function health(hp: number) {
   if (hp >= 75) return { text: 'Masih selesa. Jangan terus shopping.', color: '#c7f36b', label: 'SAFE' };

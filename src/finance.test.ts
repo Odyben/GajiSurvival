@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculate, cycle, defaults, noCuts, validateProfile, emptyLedger, spendingTo, validateLedger, purchaseImpact, monthRecap, billEvents, validDay } from './finance.ts';
+import { calculate, cycle, defaults, noCuts, validateProfile, emptyLedger, spendingTo, salvageLedger, purchaseImpact, monthRecap, billEvents, validDay, restoreData, releaseEmptyDay, DATA_VERSION } from './finance.ts';
 test('payday 31 clamps across February and rolls to March 31', () => {
   const c = cycle(new Date(2026, 1, 28, 12), 31);
   assert.equal(c.start.getDate(), 28); assert.equal(c.end.getDate(), 31); assert.equal(c.end.getMonth(), 2);
@@ -86,14 +86,59 @@ test('recap compares only tracked days using their captured daily budgets', () =
   assert.equal(monthRecap(ledger, '2025-01').days, 0);
 });
 
-test('ledger validation rejects malformed dates, duplicate IDs, fractional cents and unsafe categories', () => {
-  const entry = { id: 'a', date: '2026-10-02', amount: 12.5, category: 'meals', note: '' }, ledger = { days: { '2026-10-02': 65 }, expenses: [entry] };
-  assert.ok(validateLedger(ledger)); assert.ok(validateLedger(emptyLedger()));
+test('ledger salvage keeps readable records and drops malformed dates, duplicate IDs, fractional cents and unsafe categories', () => {
+  const entry = { id: 'a', date: '2026-10-02', amount: 12.5, category: 'meals', note: '' };
+  const clean = salvageLedger({ days: { '2026-10-02': 65 }, expenses: [entry] }, 65);
+  assert.equal(clean.dropped, 0); assert.deepEqual(clean.ledger, { days: { '2026-10-02': 65 }, expenses: [entry] });
+  assert.equal(salvageLedger(emptyLedger(), 65).dropped, 0);
   assert.ok(!validDay('2026-02-30')); assert.ok(validDay('2024-02-29'));
-  assert.ok(!validateLedger({ ...ledger, expenses: [entry, entry] }));
-  assert.ok(!validateLedger({ ...ledger, expenses: [{ ...entry, amount: 12.001 }] }));
-  assert.ok(!validateLedger({ ...ledger, expenses: [{ ...entry, category: '__proto__' }] }));
-  assert.ok(!validateLedger({ ...ledger, days: {} }));
+  const messy = salvageLedger({ days: { '2026-10-02': 65, '2026-02-30': 65 }, expenses: [entry, entry, { ...entry, id: 'b', amount: 12.001 }, { ...entry, id: 'c', category: '__proto__' }, { ...entry, id: 'd', date: '2026-10-05', note: 'kept' }] }, 70);
+  assert.equal(messy.dropped, 4);
+  assert.deepEqual(messy.ledger.expenses.map(e => e.id), ['a', 'd']);
+  assert.equal(messy.ledger.days['2026-10-05'], 70, 'an entry missing its day record gets the current daily budget');
+  assert.equal(salvageLedger('garbage', 65).dropped, 2);
+});
+
+test('saved data loads part by part: an unreadable budget never discards records', () => {
+  const ledger = { days: { '2026-10-02': 65 }, expenses: [{ id: 'a', date: '2026-10-02', amount: 20, category: 'meals', note: '' }] };
+  const r = restoreData({ profile: { ...defaults, salary: -1 }, custom: true, cuts: { coffee: true }, ledger, billDue: { rent: 5 } });
+  assert.ok(r.profileLost); assert.ok(!r.complete); assert.equal(r.data.custom, false); assert.deepEqual(r.data.profile, defaults);
+  assert.deepEqual(r.data.ledger, ledger); assert.deepEqual(r.data.billDue, { rent: 5 }); assert.equal(r.data.cuts.coffee, true);
+});
+
+test('older saves missing a newer budget field keep everything, with that field at RM0', () => {
+  const { misc, ...older } = defaults;
+  const r = restoreData({ profile: older, custom: true, cuts: {} });
+  assert.ok(r.complete); assert.equal(r.data.profile.misc, 0); assert.equal(r.data.profile.salary, defaults.salary); assert.equal(r.data.custom, true);
+  assert.deepEqual(r.data.ledger, emptyLedger()); assert.deepEqual(r.data.billDue, {});
+  assert.ok(restoreData({ profile: { ...defaults, salary: undefined } }).profileLost, 'salary must be present');
+});
+
+test('partly damaged or newer data is flagged so the original can be kept', () => {
+  const r = restoreData({ profile: defaults, ledger: { days: { '2026-10-02': 65 }, expenses: [{ id: 'bad id!', date: '2026-10-02', amount: 5, category: 'meals', note: '' }] }, billDue: { rent: 40, vehicle: 3 } });
+  assert.equal(r.skipped, 2); assert.ok(!r.complete); assert.deepEqual(r.data.billDue, { vehicle: 3 }); assert.deepEqual(r.data.ledger.days, { '2026-10-02': 65 });
+  const newer = restoreData({ version: DATA_VERSION + 1, profile: defaults });
+  assert.ok(newer.newer); assert.ok(!newer.complete);
+  assert.ok(restoreData(undefined).profileLost);
+});
+
+test('moving or deleting a date\'s last entry returns that date to the estimate', () => {
+  const p = { ...defaults, payday: 1 }, now = new Date(2026, 10, 18, 12);
+  const days: Record<string, number> = { '2026-11-10': 65 }, ledger = { days, expenses: [{ id: 'a', date: '2026-11-10', amount: 65, category: 'meals', note: '' }] };
+  const before = calculate(p, noCuts, now, ledger).balance;
+  ledger.expenses[0] = { ...ledger.expenses[0], date: '2026-11-11' }; days['2026-11-11'] = 65; releaseEmptyDay(ledger, '2026-11-10');
+  assert.ok(!Object.hasOwn(days, '2026-11-10')); assert.equal(calculate(p, noCuts, now, ledger).balance, before);
+  releaseEmptyDay(ledger, '2026-11-11'); assert.ok(Object.hasOwn(days, '2026-11-11'), 'a date that still has entries stays recorded');
+});
+
+test('a logged today is final: logging exactly the daily budget leaves the forecast unchanged', () => {
+  const p = { ...defaults, payday: 1 }, now = new Date(2026, 10, 18, 12);
+  const unlogged = calculate(p, noCuts, now);
+  const logged = calculate(p, noCuts, now, { days: { '2026-11-18': 65 }, expenses: [{ id: 'a', date: '2026-11-18', amount: 65, category: 'meals', note: '' }] });
+  assert.equal(logged.estimateDelay, .5); assert.equal(unlogged.estimateDelay, 0);
+  assert.equal(logged.projected, unlogged.projected); assert.equal(logged.days, unlogged.days); assert.equal(logged.dday?.getTime(), unlogged.dday?.getTime());
+  assert.equal(purchaseImpact(logged, 100, .5).atEvent, logged.balance - 100, 'no estimated spending before tomorrow');
+  assert.equal(purchaseImpact(logged, 100, 1.5).atEvent, logged.balance - 65 - 100);
 });
 
 test('bill calendar clamps short months and keeps payday defaults for unconfigured dates', () => {

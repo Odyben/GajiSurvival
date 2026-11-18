@@ -13,7 +13,7 @@
         <label class="field">Category<select id="expense-category"></select></label>
         <label class="field">Date<input id="expense-date" type="date" min="2000-01-01" required></label>
         <label class="field">Note (optional)<input id="expense-note" maxlength="120" placeholder="Example: lunch"></label>
-      </div><p class="form-error" id="expense-error" role="alert"></p><div class="tool-actions"><button class="button primary" type="submit" id="expense-save">Save expense</button><button class="text-button" type="button" id="expense-cancel" hidden>Cancel edit</button><button class="text-button" type="button" id="zero-day">No spending today</button></div></form>
+      </div><p class="form-error" id="expense-error" role="alert"></p><div class="tool-actions"><button class="button primary" type="submit" id="expense-save">Save expense</button><button class="text-button" type="button" id="expense-cancel" hidden>Cancel edit</button><button class="text-button" type="button" id="zero-day">No spending on this date</button></div></form>
       <div class="day-summary"><strong id="day-total"></strong><span id="day-status"></span></div>
       <div id="expense-list" class="expense-list" aria-label="Expenses for the selected date"></div>
       <button class="text-button" id="day-estimate" hidden>Use the estimate for this date</button>
@@ -40,6 +40,7 @@
   <div id="panel-recap" role="tabpanel" aria-labelledby="tab-recap" class="tools-grid" hidden>
     <section class="tool-pane"><div class="panel-top"><h3>Monthly recap</h3><label class="field">Month<input id="recap-month" type="month" min="2000-01" max="2099-12"></label></div><div id="recap-content"></div><p class="tool-help">Comparison hanya untuk hari yang direkod. Bajet harian disimpan masa entry pertama. Hari tanpa rekod bukan bermaksud spend RM0.</p></section>
     <section class="tool-pane"><span class="eyebrow">SAVE & TAKE IT WITH YOU</span><h3>Tukar device? Bawa data sekali.</h3><p class="tool-help">Download backup sebelum tukar browser atau device. Fail JSON ini ada bajet dan rekod belanja kau.</p><div class="tool-actions"><button class="button" id="backup-export">Download backup</button><label class="button file-label">Import backup<input id="backup-import" type="file" accept=".json,application/json"></label></div><p class="form-error" id="backup-error" role="alert"></p>
+      <div class="install-box" id="recovery-box" hidden><h3>Ada data lama tak dapat dibaca.</h3><p class="tool-help">Masa app dibuka, sebahagian data simpanan tak dapat dibaca. Bahagian yang okay dah dimuatkan, dan salinan asal disimpan dalam browser ni supaya tak hilang.</p><div class="tool-actions"><button class="button" id="recovery-download">Download salinan asal</button><button class="text-button" id="recovery-clear">Buang salinan</button></div></div>
       <div class="install-box"><h3>Letak terus di home screen.</h3><p class="tool-help" id="install-status">Sekali tap, terus check bajet.</p><button class="button primary" id="install-app">How to install</button></div>
     </section>
   </div>

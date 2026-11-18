@@ -1,8 +1,8 @@
 // Feature state is persisted with the existing profile in one atomic storage write.
 let ledger = emptyLedger(), billDue = {}, editingExpense = null, pendingRestore = null, deferredInstall = null;
-let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1), toolsDay = dateKey(new Date());
+const RECOVERY_STORE = 'gaji-survival-recovery';
 const escapeHtml = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-function validateDue(value) { return value && typeof value === 'object' && !Array.isArray(value) && Object.entries(value).every(([key, day]) => Object.hasOwn(billNames, key) && Number.isInteger(day) && day >= 1 && day <= 31); }
 function switchTool(name, focus = false) {
   for (const tab of document.querySelectorAll('.tool-tabs [role="tab"]')) {
     const selected = tab.id === `tab-${name}`;
@@ -32,9 +32,10 @@ function setupTools() {
   $('expense-cancel').addEventListener('click', cancelExpense);
   $('expense-date').addEventListener('change', renderExpenses);
   $('zero-day').addEventListener('click', () => {
-    const date = dateKey(new Date());
-    if (ledger.expenses.some(e => e.date === date)) { toast('Hari ini dah ada belanja. Edit entry kalau tersalah.'); return; }
-    ledger.days[date] ??= result.daily; $('expense-date').value = date; persist(); render(); toast('Tarikh ini direkod tanpa belanja.');
+    const date = $('expense-date').value;
+    if (!validDay(date) || date > dateKey(new Date())) { $('expense-error').textContent = 'Pilih tarikh hari ini atau sebelum.'; return; }
+    if (ledger.expenses.some(e => e.date === date)) { toast('Tarikh ni dah ada belanja. Edit entry kalau tersalah.'); return; }
+    ledger.days[date] ??= result.daily; $('expense-error').textContent = ''; persist(); render(); toast('Tarikh ini direkod tanpa belanja.');
   });
   $('day-estimate').addEventListener('click', () => {
     const date = $('expense-date').value;
@@ -48,8 +49,8 @@ function setupTools() {
       editingExpense = entry.id;
       for (const key of ['amount', 'date', 'category', 'note']) $(`expense-${key}`).value = entry[key];
       $('expense-save').textContent = 'Save changes'; $('expense-cancel').hidden = false; $('expense-amount').focus();
-    } else if (confirm(`Delete the entry for ${rm(entry.amount)} on ${entry.date}? This date stays logged. You can switch back to an estimate if needed.`)) {
-      ledger.expenses = ledger.expenses.filter(e => e.id !== entry.id); if (editingExpense === entry.id) cancelExpense(); persist(); render();
+    } else if (confirm(`Delete the entry for ${rm(entry.amount)} on ${entry.date}?${ledger.expenses.some(e => e.date === entry.date && e.id !== entry.id) ? '' : ' Ini entry terakhir, jadi tarikh ni guna anggaran bajet balik.'}`)) {
+      ledger.expenses = ledger.expenses.filter(e => e.id !== entry.id); releaseEmptyDay(ledger, entry.date); if (editingExpense === entry.id) cancelExpense(); persist(); render();
     }
   });
   for (const id of ['purchase-amount', 'emergency-amount', 'emergency-date']) $(id).addEventListener('input', renderScenarios);
@@ -69,6 +70,13 @@ function setupTools() {
   $('backup-import').addEventListener('change', importBackup);
   $('restore-dialog').addEventListener('close', () => { pendingRestore = null; });
   $('restore-confirm').addEventListener('click', restoreBackup);
+  $('recovery-download').addEventListener('click', downloadRecovery);
+  $('recovery-clear').addEventListener('click', () => {
+    if (!confirm('Buang salinan asal? Download dulu kalau masih perlukan data tu.')) return;
+    try { localStorage.removeItem(RECOVERY_STORE); } catch { /* Storage is blocked; the copy and its notice stay. */ }
+    renderRecovery();
+  });
+  renderRecovery();
   $('install-app').addEventListener('click', async () => {
     if (deferredInstall) { const prompt = deferredInstall; deferredInstall = null; await prompt.prompt(); await prompt.userChoice; }
     else $('install-dialog').showModal();
@@ -90,8 +98,10 @@ function saveExpense(event) {
   if (!custom) { $('expense-error').textContent = 'Save your own budget using Edit budget before adding expenses to the sample data.'; return; }
   if (!editingExpense && ledger.expenses.length >= 10000) { $('expense-error').textContent = 'The limit of 10,000 entries has been reached. Download a backup first.'; return; }
   ledger.days[date] ??= result.daily;
+  const previous = editingExpense && ledger.expenses.find(e => e.id === editingExpense);
   const entry = { id: editingExpense || `e-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`, date, amount, category, note };
   if (editingExpense) ledger.expenses = ledger.expenses.map(e => e.id === editingExpense ? entry : e); else ledger.expenses.push(entry);
+  if (previous && previous.date !== date) releaseEmptyDay(ledger, previous.date);
   cancelExpense(); persist(); render(); toast(storageAvailable ? 'Belanja saved. Sekarang nampak duit pergi mana.' : 'Expense saved for this session only.');
 }
 function renderExpenses() {
@@ -103,7 +113,7 @@ function renderExpenses() {
   $('day-status').textContent = tracked ? `${date} · Actual total` : `${date || 'Choose a date'} · Using an estimate`;
   $('expense-list').innerHTML = entries.length ? entries.map(e => `<div class="expense-row"><div><strong>${escapeHtml(e.note || categories[e.category])}</strong><small>${categories[e.category]}</small></div><span>${rm(e.amount)}</span><div class="row-actions"><button class="text-button" data-action="edit" data-expense="${e.id}" aria-label="Edit ${escapeHtml(e.note || categories[e.category])}">Edit</button><button class="text-button" data-action="delete" data-expense="${e.id}" aria-label="Delete ${escapeHtml(e.note || categories[e.category])}">Delete</button></div></div>`).join('') : `<p class="empty-copy">${tracked ? 'Tarikh ini direkod tanpa belanja.' : 'Belum ada rekod tarikh ini. Kalau dah spend, log dulu.'}</p>`;
   $('day-estimate').hidden = !tracked || entries.length > 0;
-  $('zero-day').disabled = !custom;
+  $('zero-day').hidden = tracked; $('zero-day').disabled = !custom;
 }
 function renderScenarios() {
   for (const mode of ['purchase', 'emergency']) {
@@ -141,37 +151,70 @@ function renderRecap() {
   const difference = recap.budget - recap.total;
   $('recap-content').innerHTML = `<div class="recap-stats"><div><span>TOTAL LOGGED</span><strong>${rm(recap.total)}</strong></div><div><span>DAYS LOGGED</span><strong>${recap.days} <small>${recap.days === 1 ? 'day' : 'days'}</small></strong></div></div><p class="tool-help">${recap.count} ${recap.count === 1 ? 'transaction' : 'transactions'} · ${rm(Math.abs(difference))} ${difference >= 0 ? 'below' : 'over'} the budget of ${rm(recap.budget)} for logged days.</p>${recap.breakdown.filter(c => c.total > 0).map(c => `<div class="recap-category"><span>${c.label}</span><span>${rm(c.total)} · ${money(c.total / recap.total * 100, 0)}%</span></div>`).join('')}<p class="tool-help">${recap.total > 0 ? `Paling banyak spend: ${recap.breakdown[0].label}.` : 'No spending logged.'} ${month === dateKey(now).slice(0, 7) ? `Estimated balance before your next payday: ${rm(result.projected)} (estimate).` : 'Past closing balances are unavailable because no snapshot was saved at the time.'}</p>`;
 }
+// An app left open past midnight moves date fields that still show the old day onto the new one.
+function rollToolDates() {
+  const today = dateKey(now), previous = toolsDay;
+  if (today === previous) return;
+  toolsDay = today;
+  if (!editingExpense && $('expense-date').value === previous) $('expense-date').value = today;
+  if ($('emergency-date').value < today) $('emergency-date').value = today;
+  if ($('recap-month').value === previous.slice(0, 7)) $('recap-month').value = today.slice(0, 7);
+  if (dateKey(calendarMonth).slice(0, 7) === previous.slice(0, 7)) calendarMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+}
 function renderTools() {
+  rollToolDates();
   $('expense-date').max = dateKey(now); $('emergency-date').min = dateKey(now);
   $('emergency-date').max = dateKey(new Date(result.period.end.getFullYear(), result.period.end.getMonth(), result.period.end.getDate() - 1));
   renderExpenses(); renderScenarios(); renderCalendar(); renderRecap();
 }
-function backupPayload() { return { app: 'gaji-survival', version: 2, exportedAt: new Date().toISOString(), profile, cuts, custom, ledger, billDue, theme: document.documentElement.dataset.theme }; }
-function exportBackup() {
-  const blob = new Blob([JSON.stringify(backupPayload(), null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = `gaji-survival-backup-${dateKey(new Date())}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+function download(content, name, type) {
+  const url = URL.createObjectURL(new Blob([content], { type })), a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+function backupPayload() { return { app: 'gaji-survival', version: DATA_VERSION, exportedAt: new Date().toISOString(), profile, cuts, custom, ledger, billDue, theme: document.documentElement.dataset.theme }; }
+function exportBackup() { download(JSON.stringify(backupPayload(), null, 2), `gaji-survival-backup-${dateKey(new Date())}.json`, 'application/json'); }
 async function importBackup(event) {
   $('backup-error').textContent = ''; pendingRestore = null;
   const file = event.target.files[0]; event.target.value = ''; if (!file) return;
   try {
     if (file.size > 5000000) throw new Error('The file is too large. The limit is 5MB.');
-    const value = JSON.parse(await file.text());
-    if (!validateBackup(value)) throw new Error('Invalid backup or unsupported version. Your current data has not changed.');
-    pendingRestore = value;
-    $('restore-summary').textContent = `Expenses: ${value.ledger.expenses.length}. Logged days: ${Object.keys(value.ledger.days).length}. Take-home pay: ${rm(value.profile.salary)}. Theme: ${value.theme === 'light' ? 'light' : 'dark'}.`;
+    const value = JSON.parse(await file.text()), restored = readBackup(value);
+    const theme = ['dark', 'light'].includes(value.theme) ? value.theme : null, { ledger: l, profile: p } = restored.data;
+    pendingRestore = { data: restored.data, theme };
+    $('restore-summary').textContent = `Expenses: ${l.expenses.length}. Logged days: ${Object.keys(l.days).length}. Take-home pay: ${rm(p.salary)}. Theme: ${theme || 'unchanged'}.${restored.skipped ? ` ${restored.skipped} ${restored.skipped === 1 ? 'item' : 'items'} in this file can't be read and will be skipped.` : ''}`;
     $('restore-dialog').showModal();
   } catch (error) { $('backup-error').textContent = error instanceof SyntaxError ? 'This is not a valid JSON file. Your current data has not changed.' : error.message; }
 }
-function validateBackup(value) {
-  return value && value.app === 'gaji-survival' && value.version === 2 && validateProfile(value.profile) && validateLedger(value.ledger) && validateDue(value.billDue) && typeof value.custom === 'boolean' && value.cuts && Object.keys(noCuts).every(k => typeof value.cuts[k] === 'boolean') && ['dark', 'light'].includes(value.theme) && Object.keys(value.ledger.days).every(d => d <= dateKey(new Date()));
+// Backups go through the same part-by-part reader as saved data, so older backups keep importing after format changes.
+function readBackup(value) {
+  if (!value || typeof value !== 'object' || value.app !== 'gaji-survival' || !Number.isInteger(value.version) || value.version < 1) throw new Error('This is not a Gaji Survival backup. Your current data has not changed.');
+  if (value.version > DATA_VERSION) throw new Error('This backup is from a newer version of the app. Update the app first. Your current data has not changed.');
+  const restored = restoreData(value);
+  if (restored.profileLost) throw new Error('The budget in this backup cannot be read. Your current data has not changed.');
+  if (Object.keys(restored.data.ledger.days).some(d => d > dateKey(new Date()))) throw new Error('This backup has records dated after today. Check the device date. Your current data has not changed.');
+  return restored;
 }
 function restoreBackup() {
   if (!pendingRestore) return;
-  const saved = pendingRestore;
-  profile = Object.fromEntries(Object.keys(defaults).map(k => [k, saved.profile[k]]));
-  cuts = Object.fromEntries(Object.keys(noCuts).map(k => [k, saved.cuts[k]])); custom = saved.custom;
-  ledger = saved.ledger; billDue = saved.billDue; document.documentElement.dataset.theme = saved.theme;
-  try { localStorage.setItem(THEME_STORE, saved.theme); } catch { /* The main save reports unavailable storage. */ }
+  const { data, theme } = pendingRestore;
+  ({ profile, cuts, custom, ledger, billDue } = data);
+  if (theme) {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem(THEME_STORE, theme); } catch { /* The main save reports unavailable storage. */ }
+  }
   cancelExpense(); syncThemeControl(); persist(); render(); $('restore-dialog').close(); toast(storageAvailable ? 'Backup dah restore. Boleh sambung.' : 'Backup restored for this session only.');
+}
+function recoveryText() { try { return localStorage.getItem(RECOVERY_STORE); } catch { return null; } }
+// Keeps the original saved text before a save can overwrite parts that could not be read. An existing copy is never replaced.
+function keepRecoveryCopy(text) {
+  try { if (localStorage.getItem(RECOVERY_STORE) === null) localStorage.setItem(RECOVERY_STORE, text); return true; }
+  catch { return false; }
+}
+function renderRecovery() { $('recovery-box').hidden = recoveryText() === null; }
+function downloadRecovery() {
+  const text = recoveryText(); if (text === null) return;
+  let saved = null;
+  try { saved = JSON.parse(text); } catch { /* Not JSON: download the text unchanged. */ }
+  const json = !!saved && typeof saved === 'object' && !Array.isArray(saved);
+  // Shaped like a backup so Import backup can read it once the app understands its contents.
+  download(json ? JSON.stringify({ ...saved, app: 'gaji-survival', version: saved.version ?? DATA_VERSION }, null, 2) : text, `gaji-survival-recovery-${dateKey(new Date())}.${json ? 'json' : 'txt'}`, json ? 'application/json' : 'text/plain');
 }

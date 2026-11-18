@@ -1,0 +1,404 @@
+GAJI SURVIVAL: 90-SECOND MOTION PROMO FILM
+Build brief for Claude. Paste this whole file as one message.
+
+==========================================================================
+0. QUICK SETTINGS (edit these lines only)
+==========================================================================
+FORMAT: 16:9 landscape, 1920x1080 stage
+  (For TikTok / Instagram Reels / Shorts, change the line above to:
+   FORMAT: 9:16 portrait, 1080x1920 stage)
+DURATION: 90 seconds exactly
+CTA LINE ON END CARD: [letak link atau nama domain di sini]
+AUDIO: none. No voice-over. Music will be added later in an editor.
+
+==========================================================================
+1. WHAT TO BUILD
+==========================================================================
+Build ONE self-contained HTML artifact that plays a 90-second, fully
+animated, wordless motion-design promo film for "Gaji Survival", a
+salary survival app made in Malaysia. I will screen-record the artifact
+to get the video, so it must play smoothly from start to finish with
+nothing else on screen.
+
+The film has no narration. All meaning comes from motion, on-screen
+type and app UI moments. Anyone should understand it with the sound
+off. Keep it to one idea per shot, short lines and generous hold times.
+
+Tone: the restraint and pacing of a premium tech product launch film.
+Calm, confident, typographic, lots of negative space, precise easing,
+and continuity between shots. It should feel expensive, not busy.
+
+IMPORTANT: Take inspiration only from the general style of high-end tech
+launch films. Do NOT use, imitate or reference any real company's name,
+logo, product UI, signature visuals, proprietary fonts (for example SF
+Pro), or trademarks. Do not show any real bank, e-wallet, marketplace or
+delivery brand. Use generic words like "parcel", "minyak" and "bank".
+
+==========================================================================
+2. ABOUT THE PRODUCT (so the story is accurate)
+==========================================================================
+Gaji Survival estimates whether your salary lasts until the next payday.
+- You enter take-home pay, payday date, monthly fixed bills and a daily
+  spending budget.
+- Fixed bills are set aside at the start of the pay cycle. Daily
+  spending burns the rest.
+- An RPG-style HP bar shows how much of this cycle's money is left.
+- Shows spending per day, per hour and per minute, how many days the
+  money lasts, and the exact date it runs out.
+- A burn-down chart compares the current plan with a "what-if savings"
+  plan.
+- What-if toggles: "Skip kopi mahal", "Masak sendiri" (food budget
+  -50%), "Pause smoking & leisure". They show extra days gained.
+- "Boleh beli ke?": check a purchase's impact before buying.
+- Also: expense log, bills and payday calendar, emergency-cost
+  simulator, monthly recap, and a budget "receipt" image to share.
+- Never connects to a bank. Data stays on the device. Works offline.
+  Can be installed to the phone home screen.
+
+==========================================================================
+3. ON-SCREEN LANGUAGE (do not change)
+==========================================================================
+On-screen copy deliberately mixes casual Malay and English. It is a
+relaxed, Gen-Z Malaysian brand voice. Use every line EXACTLY as written
+below. Do not translate it, "correct" the grammar or add extra lines.
+App UI labels (kickers, metric labels) stay in English as written.
+
+==========================================================================
+4. STORY NUMBERS (single source of truth; every scene must match)
+==========================================================================
+Take-home pay ............ RM3,500 (payday = 25th of the month)
+Fixed bills .............. Rent / home RM700, Car / motorbike RM450,
+                           Utilities & Wi-Fi RM150, Debt / other RM150
+                           Total RM1,450
+Starting balance ......... RM2,050 (pay - bills)
+Daily spending ........... RM80/day = Food RM40 + Coffee RM20
+                           + Leisure RM10 + Other RM10
+Pay cycle ................ 25 Nov 2026 to 25 Dec 2026 (30 days)
+"Today" .................. 5 Dec (day 10). Spent so far RM800.
+Available to spend now ... RM1,250.00
+HP ....................... 60% ("TAKE CARE", "Masih boleh bernafas.")
+Burn rate ................ RM80 / day, RM3.33 / hour, RM0.056 / minute
+Money lasts .............. 15.6 days
+Next payday .............. 20 days left (25 December 2026)
+Money runs out ........... 20 Dec, 15:00 (4.4 days before payday)
+Balance at payday ........ -RM350 (shortfall RM350)
+
+What-if, step 1: Skip kopi mahal (save RM20/day)
+  RM60/day, money lasts 20.8 days, +5.2 days, payday balance +RM50
+What-if, step 2: add Masak sendiri (save another RM20/day, food -50%)
+  RM40/day, money lasts 31.3 days, +15.6 days, payday balance +RM450
+  Runs out 5 Jan 2027, after payday, so "You can make it to payday."
+
+Boleh beli ke? RM150 (with both savings on)
+  Balance after buying RM1,100.00, balance before payday RM300.00,
+  days of spending lost 3.8 days. Verdict: safe.
+Emergency: RM250 on 15 Dec, balance before payday RM200.00
+Recap (10 days): Food RM400, Coffee & drinks RM200, Leisure RM100,
+  Other RM100
+
+==========================================================================
+5. LOOK AND FEEL (match the real app)
+==========================================================================
+Colours (dark, the default look):
+  Background ........ #121412 (near-black with a hint of green)
+  Surface / panels .. #1b1e19      Hairlines .... #31362e
+  Text .............. #edeee8      Muted text ... #969d91
+  Lime (accent, safe, brand) ............... #c7f36b
+  Amber (TAKE CARE) ........................ #e7c46a
+  Orange (spending line, RUNNING LOW) ...... #f0a46b
+  Soft red (RM0 line, run-out, shortfall) .. #f48b85
+  Receipt paper #ecefdf with ink #202619
+  Warm ivory light theme (one moment only, optional): bg #f6f3ec,
+  text #352f29, accent #98512f
+Use colour sparingly: mostly dark neutrals, with lime as the one hero
+accent. Glows are subtle (lime at 8-12% opacity, large blur).
+
+Type (Google Fonts, with fallbacks):
+  UI and headlines: "Inter" 300/400/600/700/800,
+    fallback 'Segoe UI', Arial, sans-serif
+  Numbers, kickers, receipt: "JetBrains Mono" 400/600,
+    fallback 'Cascadia Code', Consolas, monospace
+  Display 150px / 800 / letter-spacing -0.045em
+  H1 104px / 700 / -0.035em      H2 60px / 600 / -0.02em
+  Body 30px / 400                Kicker 20px mono, uppercase, +0.14em
+  All numbers use tabular figures (font-variant-numeric: tabular-nums).
+  On a 1080p stage nothing important is smaller than 22px.
+
+UI style: flat dark panels, 1px hairline borders, small radii (5-9px),
+no drop-shadow clutter, uppercase mono kickers, status dots, and a
+segmented HP bar (thin vertical gaps every 5%).
+
+Brand mark: a pixel-letter "g" drawn on a 6x7 grid in lime #c7f36b on a
+#121412 tile. Each row lists 6 cells, left to right (1 = filled):
+  0 1 1 1 1 0
+  1 1 0 0 0 0
+  1 1 0 0 0 0
+  1 1 0 1 1 0
+  1 1 0 0 1 1
+  1 1 0 0 1 1
+  0 1 1 1 1 0
+Wordmark: "gaji" (700, #edeee8) + "survival" (300, muted #969d91),
+then a small lime superscript "MY" in mono.
+
+Icons: draw simple inline-SVG line icons yourself (1.75px stroke, round
+caps, no fills): coffee cup, rice bowl, fuel pump, parcel box, lock,
+phone, wifi with a slash, calendar. No emoji. No stock illustration.
+
+==========================================================================
+6. MOTION LANGUAGE
+==========================================================================
+- Entrances: expo-out cubic-bezier(0.16, 1, 0.3, 1), 0.6-0.9s.
+  Moves and morphs: cubic-bezier(0.65, 0, 0.35, 1).
+  Linear only for live tickers. No bounce or elastic, except one tiny
+  overshoot on toggle knobs.
+- Text reveals: lines rise from behind a clip mask (translateY 100% to
+  0) while blur goes 8px to 0 and opacity 0 to 1. Words stagger
+  50-70ms. Exits are faster than entrances (0.35s).
+- Numbers: odometer-style rolling digits for balances, smooth
+  count-ups for stats, and digits that never shift width.
+- Camera: every shot has a slow, continuous push-in (scale 1.00 to
+  1.035), plus gentle parallax between foreground UI and background.
+- Focus pulls: when one element speaks, the others blur 4-6px and dim
+  to 35%.
+- Continuity: use match cuts and morphs instead of plain fades. The "?"
+  becomes the logo pixels. The logo tile zooms into the dashboard. The
+  lime toggle colour flows into the dashed savings line.
+- Rhythm: cut on a 120 BPM grid (every 0.5s beat), with major scene
+  changes on whole seconds, so music can be laid on later.
+- Readability: hold each text card at least 1.2s + 0.25s per word. At
+  most about 7 words of headline on screen at once (UI excluded).
+- Texture: very subtle film grain (2-3% opacity, animated noise) and a
+  soft vignette. Nothing more.
+- AVOID: lens flares, 3D spinning logos, confetti, glitch effects, neon
+  overload, emoji, busy gradients, drop-shadow stacks, cursor arrows,
+  fake bank screens and stock photos.
+
+==========================================================================
+7. SHOT LIST (timecodes are exact; the total is 90.0s)
+==========================================================================
+Quoted text in double quotes is on-screen copy. Use it verbatim.
+
+S1  HOOK: THE SALARY DISAPPEARS (0:00.0-0:11.0)
+ 0:00.0  Black #121412. A lime block cursor blinks twice, then mono
+         text types: "25hb."
+ 0:01.5  Headline rises: "Gaji masuk." Below it, a huge odometer
+         counts RM0.00 to "RM3,500.00" (1.2s, expo-out) with the kicker
+         "TAKE-HOME PAY". Faint lime glow behind the number.
+ 0:03.5  Four bill chips pop off the number and fly outward, 0.45s
+         apart: "Rent / home -RM700", "Car / motorbike -RM450",
+         "Utilities & Wi-Fi -RM150", "Debt / other -RM150". The number
+         steps down with each chip to "RM2,050.00". The kicker becomes
+         "STARTING BALANCE". The headline swaps to "Bil settle dulu."
+ 0:06.0  A small date flipper (top right) flips 25 Nov to 5 Dec, one day
+         per flip, accelerating. Each flip drops the number RM80. Line
+         icons (cup, bowl, fuel pump, parcel) drift up and dissolve into
+         the number. The headline cycles one word at a time, about 0.8s
+         each: "Kopi." "Makan." "Minyak." "Parcel." The number lands on
+         "RM1,250.00".
+ 0:09.5  Hold. Headline: "5hb." Muted line below:
+         "Gaji seterusnya: 20 hari lagi."
+
+S2  THE QUESTION (0:11.0-0:17.0)
+ 0:11.0  Everything fades. The number shrinks and blurs away.
+ 0:11.5  Centered, huge, words rising in sequence:
+         "Cukup ke sampai gaji?"
+ 0:14.0  The line exits upward but the "?" stays, turns lime and drifts
+         to centre. A new line appears: "Selalunya kita... agak-agak je."
+         The word "agak-agak" is slightly out of focus (blur 5px) and
+         jitters by 2px, to show guessing.
+
+S3  BRAND REVEAL (0:17.0-0:23.0)
+ 0:17.0  The lime "?" breaks into 24 square pixels. They snap, staggered,
+         into the 6x7 pixel "g" on its tile.
+ 0:19.0  The wordmark slides out from behind the tile:
+         "gaji" "survival" with superscript "MY".
+ 0:21.0  The tagline rises below: "Biar gaji tahan sampai gaji."
+ 0:22.3  Fast push into the lime tile. It fills the frame and resolves
+         into the dark dashboard surface (match cut).
+
+S4  YOUR MONEY HAS HP (0:23.0-0:32.0)
+ 0:23.0  Top strip: status dot, "Pay cycle 25 Nov — 25 Dec", and on the
+         right "Today, 5 Dec". Kicker "AVAILABLE TO SPEND". The balance
+         rolls up to "RM1,250.00", with "RM" small and the cents muted.
+ 0:24.5  The segmented HP bar fills 0 to 100% in lime (0.8s), holds,
+         then drains to 60% (2.6s). Crossing 75%, the bar colour blends
+         lime to amber, the status tag flips "SAFE" to "TAKE CARE", and
+         the caption changes from "Masih selesa. Jangan terus shopping."
+         to "Masih boleh bernafas." Readout: "60% HP left". End labels:
+         "RM0 · GAME OVER" (left), "RM2,050 · STARTING BALANCE" (right).
+ 0:28.5  Right column, large: "Duit kau ada HP."
+         Then smaller: "Macam game. Tapi yang ni, gaji kau."
+
+S5  THE BURN RATE (0:32.0-0:38.0)
+ 0:32.0  The HP panel glides up and shrinks. Three metric tiles stagger
+         in:
+           DAILY SPENDING: "RM80 / day", detail "RM3.33 / hour"
+           MONEY LASTS: "15.6 days", detail "Ikut rentak belanja sekarang"
+           NEXT PAYDAY: "20 days left", detail "25 December 2026"
+ 0:33.5  Focus pull to DAILY SPENDING (the others blur and dim). A live
+         ticker rolls "RM0.056 / minute". Overlay copy:
+         "Setiap jam, RM3.33 hilang." then "Diam-diam."
+
+S6  THE RUN-OUT DATE (0:38.0-0:47.0)
+ 0:38.0  Chart panel. Title "Perjalanan gaji kau.", subtitle "Anggaran
+         baki sepanjang pay cycle ini." Legend: solid orange "Current
+         spending", and dashed lime "With savings" (dimmed for now).
+         Dashed grid lines draw left to right. X labels: 25 Nov, 1 Dec,
+         7 Dec, 13 Dec, 19 Dec, 25 Dec. A dashed soft-red horizontal line
+         is labelled "RM0". A vertical line at 25 Dec is labelled
+         "PAYDAY".
+ 0:39.5  A solid orange line draws from 25 Nov (RM2,050) to 5 Dec
+         (RM1,250), with a soft orange area fill below. A dotted vertical
+         "TODAY" marker and a dot sit at 5 Dec.
+ 0:41.5  The line keeps going at the same slope. It crosses RM0 at 20 Dec
+         (a soft-red dot pulses once) and ends at -RM350 on payday.
+ 0:43.5  Red diagonal hatching fills the area below RM0 between 20 Dec
+         and 25 Dec, labelled "4.4 hari tanpa duit." A side card slides
+         in: kicker "MONEY RUNS OUT", big "20 Dec", small
+         "2026 · 15:00 · estimated", message "Your money runs out
+         4.4 days before payday." Top line: "Sekarang kau nampak.
+         Awal-awal."
+
+S7  WHAT IF (HERO MOMENT) (0:47.0-1:00.0)
+ 0:47.0  The chart compresses to the left 62%. A panel slides in from the
+         right: kicker "MAKE IT LAST", badge "WHAT IF", headline
+         "Cut sikit. Nafas panjang sikit." Three toggle rows, all off:
+           "Skip kopi mahal" (Save RM20 / day)
+           "Masak sendiri" (Save RM20 / day · 50%)
+           "Pause smoking & leisure" (Save RM10 / day)
+         Result box: "EXTRA DAYS YOU COULD GAIN" with "+0 days".
+ 0:48.5  Toggle 1 switches on (the knob slides, the track fills lime,
+         with a tiny overshoot). A dashed lime line peels off at TODAY and
+         draws to payday, ending just above RM0 at +RM50. The counter
+         rolls to "+5.2 days". Micro caption: "Cukup... tapi nipis."
+ 0:51.5  Toggle 2 switches on. The dashed line morphs upward to end at
+         +RM450. The counter rolls to "+15.6 days".
+ 0:54.5  The red hatching and red dot fade away. The run-out card
+         crossfades to "You can make it to payday." and "Estimated
+         balance: RM450.00". A lime ring pulses once at the line's
+         payday endpoint.
+ 0:57.0  The UI dims to 25% and blurs. Centre, big: "Dua perubahan
+         kecil." Then very large lime numerals count up to "+15.6 hari."
+
+S8  BOLEH BELI KE? (1:00.0-1:07.0)
+ 1:00.0  A clean centred card. Eyebrow "BEFORE YOU BUY", title "Boleh
+         beli ke?", help text "Masukkan harga, tengok kesan pada baki."
+         Field "Item price (RM)". Chips: "RM50", "RM150", "RM500".
+ 1:01.5  The RM150 chip highlights with a lime outline. The field fills
+         "150.00".
+ 1:02.5  A result card unfolds. Heading: "Lepas sampai payday. Masih
+         boleh bernafas." Rows count up:
+           Balance after buying ...... RM1,100.00
+           Balance before payday ..... RM300.00
+           Days of spending lost ..... 3.8 days
+ 1:05.0  Copy beside the card: "Check dulu. Baru checkout."
+
+S9  QUICK FEATURE MONTAGE (1:07.0-1:15.0). Four 2s cards with hard cuts
+    on the beat. Each card has the same layout: one big line on the left
+    and one live UI element on the right.
+ 1:07.0  "Log belanja. Siap." An expense row drops into a list:
+         "Nasi lemak", "Food", "RM8.50". The kicker reads "1 ENTRY".
+ 1:09.0  "Bil & payday, satu kalendar." December 2026 month grid
+         (weeks start on Monday; 1 Dec is a Tuesday). Chips: BILL on
+         1, 7, 15 and 20; a lime PAY chip on 25; a ring on today (5).
+ 1:11.0  "Kalau tiba-tiba ada hal?" Sub: "Tayar pancit tak tunggu
+         payday." Card: Emergency cost RM250 · 15 Dec, giving "Balance
+         before payday RM200.00".
+ 1:13.0  "Recap hujung bulan." Four horizontal bars grow:
+         Food RM400 · Coffee & drinks RM200 · Leisure RM100 · Other RM100
+
+S10 TRUST (1:15.0-1:21.0)
+ 1:15.0  Three left-aligned lines, each with a small line icon, 1.3s
+         apart:
+           (lock)          "Tak connect bank."
+           (phone)         "Data kekal dalam device kau."
+           (wifi-slash)    "Jalan offline."
+ 1:19.0  A generic phone outline (plain rounded rectangle, no
+         recognisable device details) shows a home screen of neutral grey
+         rounded squares. The lime pixel-"g" icon drops into a slot and
+         settles, labelled "Gaji Survival". Line: "Install terus ke home
+         screen."
+
+S11 RECEIPT AND END CARD (1:21.0-1:30.0)
+ 1:21.0  Line: "Bajet ada resit." A thermal-style receipt (paper
+         #ecefdf, ink #202619, mono) prints downward from a slot, using a
+         clip reveal and a soft paper shadow:
+           GAJI SURVIVAL
+           YOUR BUDGET SNAPSHOT
+           - - - - - - - - - - - - - - - -
+           SNAPSHOT 5 DEC 2026
+           AVAILABLE TO SPEND
+           RM1,250.00
+           MASIH BOLEH BERNAFAS.
+           - - - - - - - - - - - - - - - -
+           Daily spending ........ RM40.00
+           Money lasts ........... 31.3 days
+           Money runs out ........ 5 Jan 2027
+           Payday ................ 25 Dec 2026
+           Balance at payday ..... RM450.00
+           - - - - - - - - - - - - - - - -
+           WHAT-IF: SAVE RM40.00 / DAY
+           Budget estimate. Not your bank balance.
+           ||| ||  ||| | ||| (barcode drawn with thin bars)
+           DUIT KAU. PLAN KAU.
+ 1:25.0  The receipt slides down and out of frame.
+ 1:27.0  End card, centred: the pixel-"g" tile and wordmark. Below:
+         "Biar gaji tahan sampai gaji." Under that, muted mono:
+         "Biar hujung bulan kurang drama." Then the CTA line from QUICK
+         SETTINGS. Hold the final frame still. Do not fade to black and
+         do not loop.
+
+==========================================================================
+8. TECHNICAL REQUIREMENTS
+==========================================================================
+- One self-contained HTML file: inline CSS and JS, with all visuals in
+  HTML/CSS/inline SVG/canvas. No external images.
+- Animation engine: GSAP from
+  https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js
+  Use ONE master timeline, with each scene as a labelled sub-timeline
+  (S1...S11) positioned at the exact timecodes above. It must be
+  deterministic, so scrubbing and replaying look identical.
+- Fonts: Google Fonts link for Inter and JetBrains Mono, with the
+  fallback stacks given above.
+- Stage: a fixed-size stage (1920x1080, or 1080x1920 for 9:16) scaled
+  with a CSS transform to fit the window, centred, with black
+  letterboxing. All layout is in stage pixels, so it looks identical at
+  any window size.
+- Playback controls (for recording):
+    * Start screen: a minimal "Play" button. After clicking it, show 2s
+      of pure black pre-roll before 0:00 so I can start my screen
+      recorder.
+    * Space = play/pause, R = restart (with pre-roll), Left/Right = seek
+      5s, H = hide/show all controls (clean mode), F = try fullscreen
+      (fail silently if blocked), L = toggle loop (off by default).
+    * A thin progress bar with timecode and scene name at the bottom,
+      hidden in clean mode. Controls auto-hide after 2s of no mouse
+      movement, and the mouse cursor hides during playback.
+- Performance: animate only transform, opacity and filter on composited
+  layers. Draw the chart lines with SVG stroke-dashoffset. Keep a steady
+  60fps. No layout thrashing.
+- Text is real, selectable-quality text, never rasterised. Numbers use
+  tabular figures.
+- 9:16 version (when FORMAT says 9:16): re-flow every scene vertically
+  (stack panels; the chart spans full width; type scale about x1.15).
+  Keep key content out of the top 220px and bottom 380px, which are
+  covered by social app UI.
+- No sound, no network calls beyond GSAP and Google Fonts, and no
+  console errors.
+
+==========================================================================
+9. SELF-CHECK BEFORE YOU FINISH
+==========================================================================
+[ ] Total runtime is 90.0s and each scene starts at its listed timecode.
+[ ] Every number on screen matches section 4 (balances, days, dates).
+[ ] Every on-screen line is copied exactly from section 7.
+[ ] No real brand names, logos, trademarked fonts or recognisable
+    product UIs anywhere.
+[ ] Every text card is readable in time (see the readability rule).
+[ ] Clean mode (H) shows nothing but the film.
+[ ] The film holds on the end card and does not loop by default.
+
+If the full film does not fit in one response, first build the complete
+timeline with every scene present and correctly timed, then polish
+details. Never leave a scene as a placeholder. After the artifact, give a
+short shot list with timecodes so I can line up music in an editor.

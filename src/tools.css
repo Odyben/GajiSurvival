@@ -150,3 +150,6 @@ select:focus-visible { outline: 2px solid var(--lime); outline-offset: 4px; }
   .balance[data-long="true"] > span:first-child { font-size: 14px; }
   .tool-actions > .button, #restore-dialog .tool-actions > .button { width: 100%; }
 }
+
+/* Day-level actions take no space while both buttons are hidden. */
+.day-actions:not(:has(> :not([hidden]))) { display: none; }

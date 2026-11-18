@@ -41,11 +41,12 @@ test('actual expenses replace only their recorded day and are not deducted twice
   const ledger = { days: { '2026-10-02': 65, '2026-10-03': 65 }, expenses: [{ id: 'a', date: '2026-10-02', amount: 20, category: 'meals', note: '' }, { id: 'b', date: '2026-10-03', amount: 10, category: 'coffee', note: '' }] };
   const now = new Date(2026, 9, 3, 12), p = { ...defaults, payday: 1 };
   const result = calculate(p, noCuts, now, ledger);
-  assert.equal(result.spent, 65 + 20 + 10);
-  assert.equal(result.balance, 2600 - 95);
+  assert.equal(result.spent, 65 + 20 + 32.5, 'an open today counts at least its estimate so far (RM65 x half a day)');
   assert.equal(spendingTo(p, ledger, result.period.start, now, now), result.spent);
+  const done = calculate(p, noCuts, now, { ...ledger, closed: '2026-10-03' });
+  assert.equal(done.spent, 65 + 20 + 10); assert.equal(done.balance, 2600 - 95);
   const nextDay = calculate(p, noCuts, new Date(2026, 9, 4), ledger);
-  assert.equal(nextDay.spent, 95);
+  assert.equal(nextDay.spent, 95, 'once the day has passed, its logged total is final');
 });
 
 test('zero-spend day replaces estimate and older cycle records do not affect current balance', () => {
@@ -97,6 +98,8 @@ test('ledger salvage keeps readable records and drops malformed dates, duplicate
   assert.deepEqual(messy.ledger.expenses.map(e => e.id), ['a', 'd']);
   assert.equal(messy.ledger.days['2026-10-05'], 70, 'an entry missing its day record gets the current daily budget');
   assert.equal(salvageLedger('garbage', 65).dropped, 2);
+  assert.equal(salvageLedger({ days: { '2026-10-02': 65 }, expenses: [], closed: '2026-10-02' }, 65).ledger.closed, '2026-10-02');
+  assert.ok(!('closed' in salvageLedger({ days: {}, expenses: [], closed: '2026-10-09' }, 65).ledger), 'a done mark without its day is ignored');
 });
 
 test('saved data loads part by part: an unreadable budget never discards records', () => {
@@ -129,16 +132,29 @@ test('moving or deleting a date\'s last entry returns that date to the estimate'
   ledger.expenses[0] = { ...ledger.expenses[0], date: '2026-11-11' }; days['2026-11-11'] = 65; releaseEmptyDay(ledger, '2026-11-10');
   assert.ok(!Object.hasOwn(days, '2026-11-10')); assert.equal(calculate(p, noCuts, now, ledger).balance, before);
   releaseEmptyDay(ledger, '2026-11-11'); assert.ok(Object.hasOwn(days, '2026-11-11'), 'a date that still has entries stays recorded');
+  const closedDay = { days: { '2026-11-18': 65 } as Record<string, number>, expenses: [], closed: '2026-11-18' as string | undefined };
+  releaseEmptyDay(closedDay, '2026-11-18'); assert.equal(closedDay.closed, undefined, 'releasing a done day also clears its done mark');
 });
 
-test('a logged today is final: logging exactly the daily budget leaves the forecast unchanged', () => {
-  const p = { ...defaults, payday: 1 }, now = new Date(2026, 10, 18, 12);
-  const unlogged = calculate(p, noCuts, now);
-  const logged = calculate(p, noCuts, now, { days: { '2026-11-18': 65 }, expenses: [{ id: 'a', date: '2026-11-18', amount: 65, category: 'meals', note: '' }] });
-  assert.equal(logged.estimateDelay, .5); assert.equal(unlogged.estimateDelay, 0);
-  assert.equal(logged.projected, unlogged.projected); assert.equal(logged.days, unlogged.days); assert.equal(logged.dday?.getTime(), unlogged.dday?.getTime());
-  assert.equal(purchaseImpact(logged, 100, .5).atEvent, logged.balance - 100, 'no estimated spending before tomorrow');
-  assert.equal(purchaseImpact(logged, 100, 1.5).atEvent, logged.balance - 65 - 100);
+test('logging a small morning coffee never raises the balance or the forecast', () => {
+  const p = { ...defaults, payday: 1 }, morning = new Date(2026, 10, 18, 9);
+  const before = calculate(p, noCuts, morning);
+  const after = calculate(p, noCuts, morning, { days: { '2026-11-18': 65 }, expenses: [{ id: 'k', date: '2026-11-18', amount: 5, category: 'coffee', note: '' }] });
+  assert.equal(after.balance, before.balance); assert.equal(after.projected, before.projected); assert.equal(after.estimateDelay, 0);
+});
+
+test('an open today keeps estimating the rest of the day; marking it done makes its total final', () => {
+  const p = { ...defaults, payday: 1 }, noon = new Date(2026, 10, 18, 12), unlogged = calculate(p, noCuts, noon);
+  const big = calculate(p, noCuts, noon, { days: { '2026-11-18': 65 }, expenses: [{ id: 'm', date: '2026-11-18', amount: 100, category: 'shopping', note: '' }] });
+  assert.equal(big.balance, unlogged.balance - (100 - 32.5));
+  assert.equal(big.projected, big.balance - 65 * big.period.remaining, 'the rest of today stays estimated');
+  const done = calculate(p, noCuts, noon, { days: { '2026-11-18': 65 }, expenses: [{ id: 'a', date: '2026-11-18', amount: 65, category: 'meals', note: '' }], closed: '2026-11-18' });
+  assert.equal(done.estimateDelay, .5);
+  assert.equal(done.projected, unlogged.projected); assert.equal(done.days, unlogged.days); assert.equal(done.dday?.getTime(), unlogged.dday?.getTime());
+  assert.equal(purchaseImpact(done, 100, .5).atEvent, done.balance - 100, 'no estimated spending before tomorrow');
+  assert.equal(purchaseImpact(done, 100, 1.5).atEvent, done.balance - 65 - 100);
+  const stale = calculate(p, noCuts, noon, { days: { '2026-11-18': 65 }, expenses: [], closed: '2026-11-17' });
+  assert.equal(stale.estimateDelay, 0, 'a done mark from another day does not close today');
 });
 
 test('bill calendar clamps short months and keeps payday defaults for unconfigured dates', () => {

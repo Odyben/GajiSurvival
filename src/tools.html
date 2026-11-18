@@ -7,7 +7,7 @@
   </div>
   <div id="panel-spending" role="tabpanel" aria-labelledby="tab-spending" class="tools-grid">
     <section class="tool-pane"><div class="panel-top"><h3>Add expense</h3><span class="section-kicker" id="expense-count"></span></div>
-      <p class="tool-help">Log semua belanja harian pada tarikh dipilih. Total ini ganti anggaran hari itu. Fixed bills dah diasingkan.</p>
+      <p class="tool-help">Log semua belanja harian pada tarikh dipilih. Hari yang dah lepas guna total yang dilog. Hari ni, anggaran jalan terus sampai kau tekan “Dah habis belanja hari ni”. Fixed bills dah diasingkan.</p>
       <form id="expense-form" class="tool-form"><div class="field-grid">
         <label class="field">Amount (RM)<input id="expense-amount" type="number" min="0.01" max="10000000" step="0.01" inputmode="decimal" required placeholder="0.00"></label>
         <label class="field">Category<select id="expense-category"></select></label>
@@ -16,7 +16,7 @@
       </div><p class="form-error" id="expense-error" role="alert"></p><div class="tool-actions"><button class="button primary" type="submit" id="expense-save">Save expense</button><button class="text-button" type="button" id="expense-cancel" hidden>Cancel edit</button><button class="text-button" type="button" id="zero-day">No spending on this date</button></div></form>
       <div class="day-summary"><strong id="day-total"></strong><span id="day-status"></span></div>
       <div id="expense-list" class="expense-list" aria-label="Expenses for the selected date"></div>
-      <button class="text-button" id="day-estimate" hidden>Use the estimate for this date</button>
+      <div class="tool-actions day-actions"><button class="button" type="button" id="day-done" hidden>Dah habis belanja hari ni</button><button class="text-button" id="day-estimate" hidden>Use the estimate for this date</button></div>
     </section>
     <section class="tool-pane purchase-pane"><span class="eyebrow">BEFORE YOU BUY</span><h3>Boleh beli ke?</h3><p class="tool-help">Masukkan harga, tengok kesan pada baki. Cart tu boleh tunggu sekejap.</p>
       <label class="field">Item price (RM)<input id="purchase-amount" type="number" min="0" max="10000000" step="0.01" inputmode="decimal" placeholder="0.00"></label>

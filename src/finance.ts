@@ -4,7 +4,8 @@ export const defaults: Profile = { salary: 4200, payday: 25, rent: 800, vehicle:
 export const noCuts: Cuts = { coffee: false, meals: false, leisure: false };
 export const DAY = 86400000;
 export type Expense = { id: string; date: string; amount: number; category: string; note: string };
-export type Ledger = { expenses: Expense[]; days: Record<string, number> };
+// `closed` is the date the user marked "Dah habis belanja hari ni"; it only matters while that date is today.
+export type Ledger = { expenses: Expense[]; days: Record<string, number>; closed?: string };
 export const categories: Record<string, string> = { meals: 'Food', coffee: 'Coffee & drinks', petrol: 'Fuel & transport', shopping: 'Shopping', leisure: 'Leisure', misc: 'Other' };
 export const billNames: Record<string, string> = { rent: 'Rent / home', vehicle: 'Car / motorbike', utilities: 'Utilities & Wi-Fi', debt: 'Debt / other' };
 export function emptyLedger(): Ledger { return { expenses: [], days: {} }; }
@@ -19,7 +20,7 @@ function validExpense(value: unknown): value is Expense {
 }
 // Keeps every readable record instead of rejecting the whole ledger; `dropped` counts what could not be kept.
 export function salvageLedger(value: unknown, fallbackBudget: number) {
-  const source = (value && typeof value === 'object' ? value : {}) as { expenses?: unknown; days?: unknown };
+  const source = (value && typeof value === 'object' ? value : {}) as { expenses?: unknown; days?: unknown; closed?: unknown };
   const rawDays = source.days && typeof source.days === 'object' && !Array.isArray(source.days) ? source.days as Record<string, unknown> : {};
   const rawExpenses: unknown[] = Array.isArray(source.expenses) ? source.expenses : [];
   let dropped = (rawDays === source.days ? 0 : 1) + (rawExpenses === source.expenses ? 0 : 1);
@@ -30,11 +31,18 @@ export function salvageLedger(value: unknown, fallbackBudget: number) {
     ids.add(e.id); days[e.date] ??= fallbackBudget;
     expenses.push({ id: e.id, date: e.date, amount: e.amount, category: e.category, note: e.note });
   }
-  return { ledger: { expenses, days } as Ledger, dropped };
+  const closed = typeof source.closed === 'string' && Object.hasOwn(days, source.closed) ? source.closed : null;
+  return { ledger: { expenses, days, ...(closed ? { closed } : {}) } as Ledger, dropped };
 }
 // A date whose last entry moved or was deleted goes back to the estimate instead of counting as RM0 spending.
-export function releaseEmptyDay(ledger: Ledger, date: string) { if (!ledger.expenses.some(e => e.date === date)) delete ledger.days[date]; }
-// Recorded days replace the estimate. Today is spread over its elapsed portion for chart history.
+export function releaseEmptyDay(ledger: Ledger, date: string) {
+  if (ledger.expenses.some(e => e.date === date)) return;
+  delete ledger.days[date];
+  if (ledger.closed === date) delete ledger.closed;
+}
+// Recorded past days replace the estimate. Today counts the higher of its logged total and the estimate so far,
+// until it is marked done, so logging spending never makes the balance look bigger. Today is spread over its
+// elapsed portion for chart history.
 export function spendingTo(p: Profile, ledger: Ledger, start: Date, until: Date, now: Date) {
   const daily = p.meals + p.coffee + p.leisure + p.misc;
   let total = daily * Math.max(0, (until.getTime() - start.getTime()) / DAY);
@@ -46,7 +54,9 @@ export function spendingTo(p: Profile, ledger: Ledger, start: Date, until: Date,
     if (right < left || day > now || end <= start) continue;
     const elapsed = Math.max(0, right - left);
     const whole = Math.max(0, Math.min(end.getTime(), now.getTime()) - left);
-    total += (totals.get(key) || 0) * (whole === 0 ? 1 : elapsed / whole) - daily * elapsed / DAY;
+    const logged = totals.get(key) || 0, open = end > now && ledger.closed !== key;
+    const actual = open ? Math.max(logged, daily * whole / DAY) : logged;
+    total += actual * (whole === 0 ? 1 : elapsed / whole) - daily * elapsed / DAY;
   }
   return total;
 }
@@ -85,8 +95,8 @@ export function calculate(p: Profile, cuts: Cuts, now: Date, ledger: Ledger = em
   const adjusted = Math.max(0, daily - saved);
   const spent = spendingTo(p, ledger, period.start, now, now);
   const balance = disposable - spent;
-  // A logged day's total is final, today included: estimated spending resumes at the next midnight.
-  const estimateDelay = Object.hasOwn(ledger.days, dateKey(now)) ? (new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime()) / DAY : 0;
+  // Today's total becomes final only once it is marked done; estimated spending then resumes at the next midnight.
+  const estimateDelay = ledger.closed === dateKey(now) && Object.hasOwn(ledger.days, ledger.closed) ? (new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime()) / DAY : 0;
   const estimatedDays = Math.max(0, period.remaining - estimateDelay);
   const days = balance <= 0 ? 0 : adjusted === 0 ? Infinity : estimateDelay + balance / adjusted;
   const baseDays = balance <= 0 ? 0 : daily === 0 ? Infinity : estimateDelay + balance / daily;

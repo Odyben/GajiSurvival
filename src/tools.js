@@ -35,12 +35,21 @@ function setupTools() {
     const date = $('expense-date').value;
     if (!validDay(date) || date > dateKey(new Date())) { $('expense-error').textContent = 'Pilih tarikh hari ini atau sebelum.'; return; }
     if (ledger.expenses.some(e => e.date === date)) { toast('Tarikh ni dah ada belanja. Edit entry kalau tersalah.'); return; }
-    ledger.days[date] ??= result.daily; $('expense-error').textContent = ''; persist(); render(); toast('Tarikh ini direkod tanpa belanja.');
+    ledger.days[date] ??= result.daily;
+    if (date === dateKey(new Date())) ledger.closed = date; // RM0 for today is a final answer, not "so far".
+    $('expense-error').textContent = ''; persist(); render(); toast('Tarikh ini direkod tanpa belanja.');
   });
   $('day-estimate').addEventListener('click', () => {
     const date = $('expense-date').value;
     if (ledger.expenses.some(e => e.date === date)) return;
-    delete ledger.days[date]; persist(); render(); toast('This date now uses your budget estimate again.');
+    releaseEmptyDay(ledger, date); persist(); render(); toast('This date now uses your budget estimate again.');
+  });
+  $('day-done').addEventListener('click', () => {
+    const today = dateKey(new Date()), reopen = ledger.closed === today;
+    if (!Object.hasOwn(ledger.days, today)) return;
+    if (reopen) delete ledger.closed; else ledger.closed = today;
+    persist(); render();
+    toast(reopen ? 'Hari ni dibuka balik. Anggaran sambung sampai tengah malam.' : 'Okay, total hari ni dah final. Anggaran sambung esok.');
   });
   $('expense-list').addEventListener('click', event => {
     const button = event.target.closest('button[data-expense]'); if (!button) return;
@@ -110,10 +119,14 @@ function renderExpenses() {
   const total = entries.reduce((sum, e) => sum + e.amount, 0);
   $('expense-count').textContent = `${ledger.expenses.length} ${ledger.expenses.length === 1 ? 'ENTRY' : 'ENTRIES'}`;
   $('day-total').textContent = `${rm(total)} logged`;
-  $('day-status').textContent = tracked ? `${date} · Actual total` : `${date || 'Choose a date'} · Using an estimate`;
+  const isToday = date === dateKey(now), closed = ledger.closed === date;
+  const status = !tracked ? 'Using an estimate' : !isToday ? 'Actual total' : closed ? 'Final total for today' : 'Logged so far + estimate for the rest of today';
+  $('day-status').textContent = `${date || 'Choose a date'} · ${status}`;
   $('expense-list').innerHTML = entries.length ? entries.map(e => `<div class="expense-row"><div><strong>${escapeHtml(e.note || categories[e.category])}</strong><small>${categories[e.category]}</small></div><span>${rm(e.amount)}</span><div class="row-actions"><button class="text-button" data-action="edit" data-expense="${e.id}" aria-label="Edit ${escapeHtml(e.note || categories[e.category])}">Edit</button><button class="text-button" data-action="delete" data-expense="${e.id}" aria-label="Delete ${escapeHtml(e.note || categories[e.category])}">Delete</button></div></div>`).join('') : `<p class="empty-copy">${tracked ? 'Tarikh ini direkod tanpa belanja.' : 'Belum ada rekod tarikh ini. Kalau dah spend, log dulu.'}</p>`;
   $('day-estimate').hidden = !tracked || entries.length > 0;
   $('zero-day').hidden = tracked; $('zero-day').disabled = !custom;
+  $('day-done').hidden = !isToday || !entries.length;
+  $('day-done').textContent = closed ? 'Buka balik hari ni' : 'Dah habis belanja hari ni';
 }
 function renderScenarios() {
   for (const mode of ['purchase', 'emergency']) {
